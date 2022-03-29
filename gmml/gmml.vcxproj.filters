@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{c6c275ba-d261-4751-a6e5-bf7ab51d8de2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\minhook">
+      <UniqueIdentifier>{6f09e872-82a0-4713-bf3c-96f1d7f36d2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\nethost">
+      <UniqueIdentifier>{b8f22415-5c16-4b79-a465-dafd8585c43d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\minhook\src">
+      <UniqueIdentifier>{adef61fb-39cc-4c3a-b49b-a0dbbe2ee391}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\minhook\include">
+      <UniqueIdentifier>{00b59fde-ea21-4363-906a-e3e98c33c386}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\minhook\src\hde">
+      <UniqueIdentifier>{9ae3a3bb-839f-4f53-9c2c-0cd86fbb1d4a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\minhook\src\buffer.c">
+      <Filter>lib\minhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\minhook\src\hook.c">
+      <Filter>lib\minhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\minhook\src\trampoline.c">
+      <Filter>lib\minhook\src</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\minhook\src\hde\hde32.c">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\minhook\src\hde\hde64.c">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\nethost\coreclr_delegates.h">
+      <Filter>lib\nethost</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\nethost\hostfxr.h">
+      <Filter>lib\nethost</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\nethost\nethost.h">
+      <Filter>lib\nethost</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gmml.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="include\proxy.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\buffer.h">
+      <Filter>lib\minhook\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\trampoline.h">
+      <Filter>lib\minhook\src</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\hde\hde32.h">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\hde\hde64.h">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\hde\pstdint.h">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\hde\table32.h">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\src\hde\table64.h">
+      <Filter>lib\minhook\src\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\minhook\include\MinHook.h">
+      <Filter>lib\minhook\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\nethost\nethost.lib">
+      <Filter>lib\nethost</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="lib\nethost\nethost.dll">
+      <Filter>lib\nethost</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\version.def">
+      <Filter>Файлы ресурсов</Filter>
+    </None>
+  </ItemGroup>
+</Project>

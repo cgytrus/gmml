@@ -1,0 +1,3 @@
+[submodule "gmml/lib/minhook"]
+	path = gmml/lib/minhook
+	url = https://github.com/TsudaKageyu/minhook
