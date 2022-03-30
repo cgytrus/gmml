@@ -8,11 +8,13 @@ public struct ModMetadata {
     public struct ModDependency {
         internal string id { get; }
         internal string version { get; }
+        internal bool optional { get; }
 
         [JsonConstructor]
-        public ModDependency(string id, string version) {
+        public ModDependency(string id, string version, bool optional = false) {
             this.id = id;
             this.version = version;
+            this.optional = optional;
         }
     }
 
@@ -22,7 +24,7 @@ public struct ModMetadata {
     public string[] authors { get; }
     public string description { get; }
     public ModDependency[] dependencies { get; }
-    public string? mainAssembly { get; internal set; }
+    internal string? mainAssembly { get; set; }
 
     [JsonConstructor]
     public ModMetadata(string id, string name, string version, string[] authors, string? description = null,

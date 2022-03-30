@@ -8,13 +8,13 @@ using Semver;
 
 using UndertaleModLib;
 
-// ReSharper disable UnusedType.Global
-// ReSharper disable UnusedMember.Global
-
 namespace GmmlPatcher;
+
+// ReSharper disable once UnusedType.Global
 public static unsafe class Patcher {
     private const string ModsPath = "mods";
 
+    // ReSharper disable once UnusedMember.Global
     [UnmanagedCallersOnly]
     public static byte* ModifyGameData(byte* original, int* size) {
         Console.WriteLine("Deserializing data");
@@ -42,18 +42,21 @@ public static unsafe class Patcher {
         }
         SearchForMods(ModsPath);
 
-        List<(ModMetadata metadata, Assembly assembly)> queuedMods = new();
+        List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> queuedMods =
+            new();
         foreach((string path, ModMetadata metadata) in availableMods) {
-            if(!TryQueueMod(path, metadata, availableMods, out Assembly? assembly))
+            if(!TryQueueMod(path, metadata, availableMods, out Assembly? assembly,
+                out IReadOnlyList<ModMetadata> availableDependencies))
                 continue;
-            queuedMods.Add((metadata, assembly));
+            queuedMods.Add((metadata, assembly, availableDependencies));
         }
 
         AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
 
         IEnumerable<ModMetadata> exposedQueuedMods = queuedMods.Select(mod => mod.metadata);
-        foreach((ModMetadata metadata, Assembly? assembly) in queuedMods) {
-            if(!TryLoadMod(metadata, assembly, data, exposedQueuedMods))
+        foreach((ModMetadata metadata, Assembly? assembly, IReadOnlyList<ModMetadata> availableDependencies) in
+            queuedMods) {
+            if(!TryLoadMod(metadata, assembly, data, availableDependencies, exposedQueuedMods))
                 continue;
             Console.WriteLine($"Loaded mod {metadata.id}");
         }
@@ -133,22 +136,37 @@ public static unsafe class Patcher {
 
     // ReSharper disable once CognitiveComplexity
     private static bool TryQueueMod(string path, ModMetadata metadata, IEnumerable<(string, ModMetadata)> availableMods,
-        [NotNullWhen(true)] out Assembly? assembly) {
+        [NotNullWhen(true)] out Assembly? assembly, out IReadOnlyList<ModMetadata> availableDependencies) {
         assembly = null;
 
-        if(ModDependenciesAvailable(availableMods, metadata.dependencies))
+        availableDependencies = GetAvailableDependencies(availableMods, metadata.dependencies, out bool allAvailable);
+        if(allAvailable)
             return TryLoadModAssembly(path, metadata, out assembly);
 
         LogModLoadError(metadata.id, "missing dependencies");
         return false;
     }
 
-    private static bool ModDependenciesAvailable(IEnumerable<(string, ModMetadata metadata)> availableMods,
-        IEnumerable<ModMetadata.ModDependency> dependencies) => dependencies.All(dependency =>
-            availableMods.Any(mod =>
-                mod.metadata.id == dependency.id && VersionsCompatible(
-                    SemVersion.Parse(mod.metadata.version, SemVersionStyles.Strict),
-                    SemVersion.Parse(dependency.version, SemVersionStyles.Strict))));
+    private static IReadOnlyList<ModMetadata> GetAvailableDependencies(
+        IEnumerable<(string, ModMetadata metadata)> availableMods, IEnumerable<ModMetadata.ModDependency> dependencies,
+        out bool allAvailable) {
+        List<ModMetadata> availableDependencies = new();
+        allAvailable = true;
+        foreach(ModMetadata.ModDependency dependency in dependencies) {
+            bool currentAvailable = false;
+            foreach((string _, ModMetadata metadata) in availableMods) {
+                if(metadata.id != dependency.id || !VersionsCompatible(
+                    SemVersion.Parse(metadata.version, SemVersionStyles.Strict),
+                    SemVersion.Parse(dependency.version, SemVersionStyles.Strict)))
+                    continue;
+                availableDependencies.Add(metadata);
+                currentAvailable = true;
+                break;
+            }
+            if(!dependency.optional) allAvailable &= currentAvailable;
+        }
+        return availableDependencies;
+    }
 
     private static bool VersionsCompatible(SemVersion left, SemVersion right) =>
         left == right || left.Major != 0 && left.Major == right.Major;
@@ -170,7 +188,7 @@ public static unsafe class Patcher {
     }
 
     private static bool TryLoadMod(ModMetadata metadata, Assembly assembly,
-        UndertaleData data, IEnumerable<ModMetadata> queuedMods) {
+        UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
         try {
             Type? type = assembly.GetTypes()
                 .FirstOrDefault(modType => modType.GetInterfaces().Contains(typeof(IGameMakerMod)));
@@ -179,7 +197,7 @@ public static unsafe class Patcher {
                 return false;
             }
 
-            (Activator.CreateInstance(type) as IGameMakerMod)?.Load(data, queuedMods);
+            (Activator.CreateInstance(type) as IGameMakerMod)?.Load(data, availableDependencies, queuedMods);
         }
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
