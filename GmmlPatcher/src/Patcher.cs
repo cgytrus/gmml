@@ -33,11 +33,14 @@ public static unsafe class Patcher {
             File.ReadAllLines(blacklistPath).ToImmutableHashSet() : ImmutableHashSet<string>.Empty;
 
         List<(string, ModMetadata)> availableMods = new();
-        foreach(string path in Directory.EnumerateDirectories(ModsPath)) {
-            if(!TryGetModMetadata(path, blacklist, whitelist, out ModMetadata metadata))
-                continue;
-            availableMods.Add((path, metadata));
+        void SearchForMods(string directory) {
+            foreach(string path in Directory.EnumerateDirectories(directory)) {
+                if(TryGetModMetadata(path, blacklist, whitelist, out ModMetadata metadata))
+                    availableMods.Add((path, metadata));
+                SearchForMods(path);
+            }
         }
+        SearchForMods(ModsPath);
 
         List<(ModMetadata metadata, Assembly assembly)> queuedMods = new();
         foreach((string path, ModMetadata metadata) in availableMods) {
