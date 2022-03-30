@@ -172,20 +172,14 @@ public static unsafe class Patcher {
     private static bool TryLoadMod(ModMetadata metadata, Assembly assembly,
         UndertaleData data, IEnumerable<ModMetadata> queuedMods) {
         try {
-            Type? type = assembly.GetTypes().FirstOrDefault(modType => modType.Name == "GameMakerMod");
+            Type? type = assembly.GetTypes()
+                .FirstOrDefault(modType => modType.GetInterfaces().Contains(typeof(IGameMakerMod)));
             if(type is null) {
-                LogModLoadError(metadata.id, "type GameMakerMod not found");
+                LogModLoadError(metadata.id, "mod type not found");
                 return false;
             }
 
-            MethodInfo? method = type.GetMethod("Load", BindingFlags.Public | BindingFlags.Static,
-                new Type[] { typeof(UndertaleData), typeof(IEnumerable<ModMetadata>) });
-            if(method is null) {
-                LogModLoadError(metadata.id, "method GameMakerMod.Load(UndertaleData, List<ModMetadata>) not found");
-                return false;
-            }
-
-            method.Invoke(null, new object[] { data, queuedMods });
+            (Activator.CreateInstance(type) as IGameMakerMod)?.Load(data, queuedMods);
         }
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
