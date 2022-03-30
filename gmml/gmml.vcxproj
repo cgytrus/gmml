@@ -171,12 +171,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="lib\minhook\src\buffer.c" />
     <ClCompile Include="lib\minhook\src\hde\hde32.c" />
     <ClCompile Include="lib\minhook\src\hde\hde64.c" />
     <ClCompile Include="lib\minhook\src\hook.c" />
     <ClCompile Include="lib\minhook\src\trampoline.c" />
+    <ClCompile Include="src\dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\gmml.h" />
