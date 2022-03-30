@@ -12,7 +12,7 @@ namespace GmmlPatcher;
 
 // ReSharper disable once UnusedType.Global
 public static unsafe class Patcher {
-    private const string ModsPath = "mods";
+    private static readonly string modsPath = Path.Combine("gmml", "mods");
 
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
         _queuedMods;
@@ -49,8 +49,8 @@ public static unsafe class Patcher {
 
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>
         QueueMods() {
-        string whitelistPath = Path.Combine(ModsPath, "whitelist.txt");
-        string blacklistPath = Path.Combine(ModsPath, "blacklist.txt");
+        string whitelistPath = Path.Combine(modsPath, "whitelist.txt");
+        string blacklistPath = Path.Combine(modsPath, "blacklist.txt");
 
         ImmutableHashSet<string> whitelist = File.Exists(whitelistPath) ?
             File.ReadAllLines(whitelistPath).ToImmutableHashSet() : ImmutableHashSet<string>.Empty;
@@ -67,7 +67,7 @@ public static unsafe class Patcher {
             }
         }
 
-        SearchForMods(ModsPath);
+        SearchForMods(modsPath);
 
         List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> queuedMods =
             new();
@@ -103,7 +103,7 @@ public static unsafe class Patcher {
         if(metadata.dependencies.Any(dependency => !VerifyMetadata(dependency.id, dependency.version, "dependency")))
             return false;
 
-        string relativePath = $"{Path.PathSeparator}{Path.GetRelativePath(ModsPath, path)}";
+        string relativePath = $"{Path.PathSeparator}{Path.GetRelativePath(modsPath, path)}";
         bool blacklisted = blacklist.Contains(metadata.id) || blacklist.Contains(relativePath);
         bool whitelisted = whitelist.IsEmpty || whitelist.Contains(metadata.id) || whitelist.Contains(relativePath);
         if(blacklisted || !whitelisted) {

@@ -86,7 +86,7 @@ bool startClrHost() {
         return false;
     }
 
-    const string_t config_path = TEXT("gmml\\GmmlPatcher.runtimeconfig.json");
+    const string_t config_path = TEXT("gmml\\patcher\\GmmlPatcher.runtimeconfig.json");
     load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
     load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
     if(load_assembly_and_get_function_pointer == nullptr) {
@@ -94,7 +94,7 @@ bool startClrHost() {
         return false;
     }
 
-    const string_t dotnetlib_path = TEXT("gmml\\GmmlPatcher.dll");
+    const string_t dotnetlib_path = TEXT("gmml\\patcher\\GmmlPatcher.dll");
 
     // the macros from coreclr_delegates.h don't work for some reason
     // please submit a PR if you manage to fix it
