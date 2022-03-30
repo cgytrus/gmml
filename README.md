@@ -2,8 +2,9 @@
 A mod loader for some GameMaker Studio 2 games ***not*** using YYC
 
 ## Installation
-1. Download latest release (there are none yet lol, [compile it yourself](#Compilation))
-2. Unpack the downloaded archive into the game's folder
+1. Install [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.3-windows-x64-installer)
+2. Download latest release (there are none yet lol, [compile it yourself](#Compilation))
+3. Unpack the downloaded archive into the game's folder
 
 ## Compilation
 ### Prerequisites
@@ -24,7 +25,7 @@ A mod loader for some GameMaker Studio 2 games ***not*** using YYC
 8. Publish GmmlPatcher `dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`
 ### Install
 1. Copy the `version.dll` and `nethost.dll` from gmml build output to your game's root
-2. Copy the publish folder from GmmlPatcher publish output to your game's root and rename it to `gmml`
+2. Copy the publish folder from GmmlPatcher publish output to `<game root>/gmml` and rename it to `patcher`
 3. Create a `gmml.cfg` file in game's root
 4. Optional: add line `debug` to gmml.cfg to enable some debug messages and `console` to display a console
 The final structure would look something like this:
@@ -32,12 +33,13 @@ The final structure would look something like this:
 <game root>
 +---...
 +---gmml
-|   +---...
-|   +---GmmlPatcher.dll
-|   \---...
-+---mods
-|   +---*your mods here*
-|   \---...
+|   +---patcher
+|   |   +---...
+|   |   +---GmmlPatcher.dll
+|   |   \---...
+|   \---mods
+|       +---*your mods here*
+|       \---...
 +---gmml.cfg
 +---nethost.dll
 +---version.dll
@@ -45,9 +47,7 @@ The final structure would look something like this:
 ```
 
 ## Usage
-1. Put your mods in `<game root>/mods`
-2. Put mods' IDs (you can get them from the mods' `manifest.json` file) in `mods/blacklist.txt` to ignore them
+1. Put your mods in `<game root>/gmml/mods`
+2. Put mods' IDs (you can get them from the mods' `manifest.json` file) or paths (prefixed with your system's directory separator)
+   in `mods/blacklist.txt` to ignore them
 3. Put mods' IDs in `mods/whitelist.txt` to enable the whitelist and only load those mods
-
-*istg i'll go crazy if i'll need to make another force push
-because i'm dumb and messed smth up*
