@@ -14,9 +14,14 @@ namespace GmmlPatcher;
 public static unsafe class Patcher {
     private const string ModsPath = "mods";
 
+    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
+        _queuedMods;
+
     // ReSharper disable once UnusedMember.Global
     [UnmanagedCallersOnly]
-    public static byte* ModifyGameData(byte* original, int* size) {
+    public static byte* ModifyData(int audioGroup, byte* original, int* size) {
+        Console.WriteLine(audioGroup < 0 ? "Modifying game data" : $"Modifying audio group {audioGroup}");
+
         Console.WriteLine("Deserializing data");
 
         using UnmanagedMemoryStream originalStream = new(original, *size);
@@ -24,6 +29,25 @@ public static unsafe class Patcher {
 
         Console.WriteLine("Loading mods");
 
+        _queuedMods ??= QueueMods();
+
+        AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
+
+        IEnumerable<ModMetadata> exposedQueuedMods = _queuedMods.Select(mod => mod.metadata);
+        foreach((ModMetadata metadata, Assembly? assembly, IReadOnlyList<ModMetadata> availableDependencies) in
+            _queuedMods) {
+            if(!TryLoadMod(metadata, assembly, audioGroup, data, availableDependencies, exposedQueuedMods))
+                continue;
+            Console.WriteLine($"Loaded mod {metadata.id}");
+        }
+
+        AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
+
+        Console.WriteLine("Serializing data");
+        return UndertaleDataToBytes(data, size);
+    }
+
+    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> QueueMods() {
         string whitelistPath = Path.Combine(ModsPath, "whitelist.txt");
         string blacklistPath = Path.Combine(ModsPath, "blacklist.txt");
 
@@ -33,6 +57,7 @@ public static unsafe class Patcher {
             File.ReadAllLines(blacklistPath).ToImmutableHashSet() : ImmutableHashSet<string>.Empty;
 
         List<(string, ModMetadata)> availableMods = new();
+
         void SearchForMods(string directory) {
             foreach(string path in Directory.EnumerateDirectories(directory)) {
                 if(TryGetModMetadata(path, blacklist, whitelist, out ModMetadata metadata))
@@ -40,6 +65,7 @@ public static unsafe class Patcher {
                 SearchForMods(path);
             }
         }
+
         SearchForMods(ModsPath);
 
         List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> queuedMods =
@@ -50,21 +76,7 @@ public static unsafe class Patcher {
                 continue;
             queuedMods.Add((metadata, assembly, availableDependencies));
         }
-
-        AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
-
-        IEnumerable<ModMetadata> exposedQueuedMods = queuedMods.Select(mod => mod.metadata);
-        foreach((ModMetadata metadata, Assembly? assembly, IReadOnlyList<ModMetadata> availableDependencies) in
-            queuedMods) {
-            if(!TryLoadMod(metadata, assembly, data, availableDependencies, exposedQueuedMods))
-                continue;
-            Console.WriteLine($"Loaded mod {metadata.id}");
-        }
-
-        AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
-
-        Console.WriteLine("Serializing data");
-        return UndertaleDataToBytes(data, size);
+        return queuedMods;
     }
 
     private static bool TryGetModMetadata(string path, ImmutableHashSet<string> blacklist,
@@ -187,7 +199,7 @@ public static unsafe class Patcher {
         return true;
     }
 
-    private static bool TryLoadMod(ModMetadata metadata, Assembly assembly,
+    private static bool TryLoadMod(ModMetadata metadata, Assembly assembly, int audioGroup,
         UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
         try {
             Type? type = assembly.GetTypes()
@@ -197,7 +209,8 @@ public static unsafe class Patcher {
                 return false;
             }
 
-            (Activator.CreateInstance(type) as IGameMakerMod)?.Load(data, availableDependencies, queuedMods);
+            (Activator.CreateInstance(type) as IGameMakerMod)?
+                .Load(audioGroup, data, availableDependencies, queuedMods);
         }
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
@@ -226,6 +239,4 @@ public static unsafe class Patcher {
         for(int i = 0; i < *size; i++) *(bytesPtr + i) = bytes[i];
         return bytesPtr;
     }
-
-    //public static IntPtr ModifyAudioGroup([MarshalAs(UnmanagedType.LPArray)] IntPtr original, int number) => original;
 }

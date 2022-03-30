@@ -3,6 +3,7 @@ using UndertaleModLib;
 namespace GmmlPatcher;
 
 public interface IGameMakerMod {
-    public void Load(UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies,
+    // audioGroup -1 = game data
+    public void Load(int audioGroup, UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies,
         IEnumerable<ModMetadata> queuedMods);
 }

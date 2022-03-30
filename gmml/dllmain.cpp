@@ -79,13 +79,11 @@ namespace {
     load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
 
-unsigned char* modifyGameData(unsigned char* orig, int* size) {
-    if(settings.debug)
-        MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
-
+unsigned char* (__stdcall* modifyDataManaged)(int, unsigned char*, int*);
+bool startClrHost() {
     if(!load_hostfxr()) {
         MessageBoxA(NULL, "Error when loading hostfxr", NULL, MB_OK);
-        return orig;
+        return false;
     }
 
     const string_t config_path = TEXT("gmml\\GmmlPatcher.runtimeconfig.json");
@@ -93,7 +91,7 @@ unsigned char* modifyGameData(unsigned char* orig, int* size) {
     load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
     if(load_assembly_and_get_function_pointer == nullptr) {
         MessageBoxA(NULL, "Error when starting .NET CLR", NULL, MB_OK);
-        return orig;
+        return false;
     }
 
     const string_t dotnetlib_path = TEXT("gmml\\GmmlPatcher.dll");
@@ -101,29 +99,42 @@ unsigned char* modifyGameData(unsigned char* orig, int* size) {
     // the macros from coreclr_delegates.h don't work for some reason
     // please submit a PR if you manage to fix it
     // __stdcall here is CORECLR_DELEGATE_CALLTYPE
-    auto modifyGameDataManaged = (unsigned char*(__stdcall*)(unsigned char*, int*))nullptr;
     int rc = load_assembly_and_get_function_pointer(
         dotnetlib_path.c_str(),
         TEXT("GmmlPatcher.Patcher, GmmlPatcher"), // type
-        TEXT("ModifyGameData"), // method
-        (const char_t*) - 1, // UNMANAGEDCALLERSONLY_METHOD
+        TEXT("ModifyData"), // method
+        (const char_t*)-1, // UNMANAGEDCALLERSONLY_METHOD
         nullptr,
-        (void**)&modifyGameDataManaged);
-    if(rc != 0 || modifyGameDataManaged == nullptr) {
+        (void**)&modifyDataManaged);
+    if(rc != 0 || modifyDataManaged == nullptr) {
         MessageBoxA(NULL, "Error when loading managed assembly", NULL, MB_OK);
-        return orig;
+        return false;
     }
 
     if(settings.debug)
         MessageBoxA(NULL, "CLR host loaded", "Info", MB_OK);
 
-    return modifyGameDataManaged(orig, size);
+    return true;
+}
+
+unsigned char* modifyGameData(unsigned char* orig, int* size) {
+    if(settings.debug)
+        MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
+
+    if(modifyDataManaged == nullptr && !startClrHost())
+        return orig;
+
+    return modifyDataManaged(-1, orig, size);
 }
 
 unsigned char* modifyAudioGroup(unsigned char* orig, int* size, int number) {
     if(settings.debug)
         MessageBoxA(NULL, (std::string("Loading audio group ") + std::to_string(number)).c_str(), "Info", MB_OK);
-    return orig;
+
+    if(modifyDataManaged == nullptr && !startClrHost())
+        return orig;
+
+    return modifyDataManaged(number, orig, size);
 }
 
 unsigned char* (__cdecl* LoadSave_ReadBundleFile_orig)(char*, int*);
