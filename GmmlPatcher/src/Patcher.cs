@@ -47,7 +47,8 @@ public static unsafe class Patcher {
         return UndertaleDataToBytes(data, size);
     }
 
-    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> QueueMods() {
+    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>
+        QueueMods() {
         string whitelistPath = Path.Combine(ModsPath, "whitelist.txt");
         string blacklistPath = Path.Combine(ModsPath, "blacklist.txt");
 
@@ -81,9 +82,15 @@ public static unsafe class Patcher {
 
     private static bool TryGetModMetadata(string path, ImmutableHashSet<string> blacklist,
         ImmutableHashSet<string> whitelist, out ModMetadata metadata) {
+        string metadataPath = Path.Combine(path, "metadata.json");
+        if(!File.Exists(metadataPath)) {
+            metadata = default(ModMetadata);
+            return false;
+        }
+
         string name = Path.GetFileName(path);
 
-        try { metadata = GetModMetadata(path, name); }
+        try { metadata = GetModMetadata(metadataPath, name); }
         catch(Exception ex) {
             LogModLoadError(name, ex);
             metadata = default(ModMetadata);
@@ -114,7 +121,7 @@ public static unsafe class Patcher {
     }
 
     private static ModMetadata GetModMetadata(string path, string internalName) {
-        string jsonMetadata = File.ReadAllText(Path.Combine(path, "metadata.json"));
+        string jsonMetadata = File.ReadAllText(path);
         ModMetadata metadata = JsonSerializer.Deserialize<ModMetadata>(jsonMetadata);
         metadata.mainAssembly ??= $"{internalName}.dll";
 
