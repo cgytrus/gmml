@@ -13,6 +13,8 @@ using UndertaleModLib;
 
 namespace GmmlPatcher;
 public static unsafe class Patcher {
+    private const string ModsPath = "mods";
+
     [UnmanagedCallersOnly]
     public static byte* ModifyGameData(byte* original, int* size) {
         Console.WriteLine("Deserializing data");
@@ -22,8 +24,8 @@ public static unsafe class Patcher {
 
         Console.WriteLine("Loading mods");
 
-        string whitelistPath = Path.Combine("mods", "whitelist.txt");
-        string blacklistPath = Path.Combine("mods", "blacklist.txt");
+        string whitelistPath = Path.Combine(ModsPath, "whitelist.txt");
+        string blacklistPath = Path.Combine(ModsPath, "blacklist.txt");
 
         ImmutableHashSet<string> whitelist = File.Exists(whitelistPath) ?
             File.ReadAllLines(whitelistPath).ToImmutableHashSet() : ImmutableHashSet<string>.Empty;
@@ -31,7 +33,7 @@ public static unsafe class Patcher {
             File.ReadAllLines(blacklistPath).ToImmutableHashSet() : ImmutableHashSet<string>.Empty;
 
         List<(string, ModMetadata)> availableMods = new();
-        foreach(string path in Directory.EnumerateDirectories("mods")) {
+        foreach(string path in Directory.EnumerateDirectories(ModsPath)) {
             if(!TryGetModMetadata(path, blacklist, whitelist, out ModMetadata metadata))
                 continue;
             availableMods.Add((path, metadata));
@@ -76,8 +78,9 @@ public static unsafe class Patcher {
         if(metadata.dependencies.Any(dependency => !VerifyMetadata(dependency.id, dependency.version, "dependency")))
             return false;
 
-        bool blacklisted = blacklist.Contains(metadata.id);
-        bool whitelisted = whitelist.IsEmpty || whitelist.Contains(metadata.id);
+        string relativePath = $"{Path.PathSeparator}{Path.GetRelativePath(ModsPath, path)}";
+        bool blacklisted = blacklist.Contains(metadata.id) || blacklist.Contains(relativePath);
+        bool whitelisted = whitelist.IsEmpty || whitelist.Contains(metadata.id) || whitelist.Contains(relativePath);
         if(blacklisted || !whitelisted) {
             Console.WriteLine($"Ignoring mod {metadata.id} ({(whitelisted ? "blacklisted" : "not whitelisted")})");
             return false;
