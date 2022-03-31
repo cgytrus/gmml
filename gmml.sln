@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE = LICENSE
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlHooker", "GmmlHooker\GmmlHooker.csproj", "{718EEC84-EF03-4ED1-900E-2B5B30EB776D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -49,6 +51,14 @@ Global
 		{F500FEC4-06A1-4AFF-A84F-E2E4EFE6497D}.Release|x64.Build.0 = Release|Any CPU
 		{F500FEC4-06A1-4AFF-A84F-E2E4EFE6497D}.Release|x86.ActiveCfg = Release|Any CPU
 		{F500FEC4-06A1-4AFF-A84F-E2E4EFE6497D}.Release|x86.Build.0 = Release|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Debug|x64.Build.0 = Debug|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Debug|x86.Build.0 = Debug|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x64.ActiveCfg = Release|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x64.Build.0 = Release|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x86.ActiveCfg = Release|Any CPU
+		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
