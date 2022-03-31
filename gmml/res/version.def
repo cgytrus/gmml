@@ -17,3 +17,4 @@ EXPORTS
     VerLanguageNameW = _VerLanguageNameW
     VerQueryValueA = _VerQueryValueA
     VerQueryValueW = _VerQueryValueW
+    mmAlloc

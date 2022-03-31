@@ -17,6 +17,9 @@ public static unsafe class Patcher {
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
         _queuedMods;
 
+    [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
+
     // ReSharper disable once UnusedMember.Global
     [UnmanagedCallersOnly]
     public static byte* ModifyData(int audioGroup, byte* original, int* size) {
@@ -240,10 +243,10 @@ public static unsafe class Patcher {
     private static byte* UndertaleDataToBytes(UndertaleData data, int* size) {
         using MemoryStream stream = new(*size);
         UndertaleIO.Write(stream, data);
-        byte[] bytes = stream.GetBuffer();
         *size = (int)stream.Length;
-        byte* bytesPtr = (byte*)Marshal.AllocHGlobal(*size);
-        for(int i = 0; i < *size; i++) *(bytesPtr + i) = bytes[i];
+        byte* bytesPtr = (byte*)mmAlloc((ulong)*size, (sbyte*)0, 0x124, false);
+        Marshal.Copy(stream.GetBuffer(), 0, (IntPtr)bytesPtr, *size);
+        GC.Collect();
         return bytesPtr;
     }
 }

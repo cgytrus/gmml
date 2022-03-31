@@ -68,6 +68,16 @@ void loadSettings(const char* path) {
 
 using string_t = std::basic_string<char_t>;
 
+void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool unk3) {
+    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
+    return ((void* (__cdecl*)(unsigned long long, char const*, int, bool))(base + 0x339090))(size, why, unk2, unk3);
+}
+
+static void __cdecl mmFree(void const* block) {
+    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
+    ((void (__cdecl*)(void const*))(base + 0x339500))(block);
+}
+
 namespace {
     // Globals to hold hostfxr exports
     hostfxr_initialize_for_runtime_config_fn init_fptr;
@@ -126,8 +136,11 @@ unsigned char* modifyGameData(unsigned char* orig, int* size) {
 
 #pragma warning(push)
 #pragma warning(disable : 6011)
-    return modifyDataManaged(-1, orig, size);
+    auto bytes = modifyDataManaged(-1, orig, size);
 #pragma warning(pop)
+
+    if(bytes != orig) mmFree(orig);
+    return bytes;
 }
 
 unsigned char* modifyAudioGroup(unsigned char* orig, int* size, int number) {
@@ -139,8 +152,11 @@ unsigned char* modifyAudioGroup(unsigned char* orig, int* size, int number) {
 
 #pragma warning(push)
 #pragma warning(disable : 6011)
-    return modifyDataManaged(number, orig, size);
+    auto bytes = modifyDataManaged(number, orig, size);
 #pragma warning(pop)
+
+    if(bytes != orig) mmFree(orig);
+    return bytes;
 }
 
 unsigned char* (__cdecl* LoadSave_ReadBundleFile_orig)(char*, int*);
