@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" />
+      <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" Private="false" />
     </ItemGroup>
 
     <ItemGroup>

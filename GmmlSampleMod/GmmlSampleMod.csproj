@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\GmmlHooker\GmmlHooker.csproj" />
-      <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" />
+      <ProjectReference Include="..\GmmlHooker\GmmlHooker.csproj" Private="false" />
+      <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
