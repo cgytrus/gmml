@@ -36,8 +36,9 @@ public static class Patcher {
             if(TryLoadCache(audioGroup, original, size, out byte* modified, out string fileName, out MD5 hash))
                 return modified;
             _hashes ??= new Dictionary<string, string>(1);
-            SaveCache(fileName, hash, _hashes);
+            SaveHash(fileName, hash, _hashes);
             modified = LoadMods(audioGroup, original, size);
+            SaveCache(fileName, modified, *size);
             return modified;
         }
         catch(Exception ex) {
@@ -61,7 +62,7 @@ public static class Patcher {
         hash = HashCurrentSetup(audioGroup, data);
 
         if(hash.Hash is null) {
-            Console.WriteLine($"Warning! Failed to {fileName} hash");
+            Console.WriteLine($"Warning! Failed to hash {fileName}");
             return false;
         }
 
@@ -115,16 +116,22 @@ public static class Patcher {
         }
 
         Console.WriteLine($"Loading cached {fileName}");
-        byte[] fileBytes = File.ReadAllBytes(Path.Combine(cachePath, fileName));
-        *size = fileBytes.Length;
-        modified = (byte*)mmAlloc((ulong)*size, (sbyte*)0, 0x124, false);
-        Marshal.Copy(fileBytes, 0, (IntPtr)modified, fileBytes.Length);
+        try {
+            byte[] fileBytes = File.ReadAllBytes(Path.Combine(cachePath, fileName));
+            *size = fileBytes.Length;
+            modified = (byte*)mmAlloc((ulong)*size, (sbyte*)0, 0x124, false);
+            Marshal.Copy(fileBytes, 0, (IntPtr)modified, fileBytes.Length);
+        }
+        catch(Exception ex) {
+            Console.WriteLine($"Warning! Failed to load {fileName} cache\n{ex}");
+            return false;
+        }
         return true;
     }
 
-    private static void SaveCache(string fileName, HashAlgorithm hash, Dictionary<string, string> hashes) {
+    private static void SaveHash(string fileName, HashAlgorithm hash, Dictionary<string, string> hashes) {
         try {
-            Console.WriteLine($"Saving {fileName} cache");
+            Console.WriteLine($"Saving {fileName} hash");
 
             // already warned in TryLoadCache so we can just quietly return
             if(hash.Hash is null)
@@ -133,6 +140,19 @@ public static class Patcher {
             string hashString = BitConverter.ToString(hash.Hash).Replace("-", "").ToLower();
             hashes[fileName] = hashString;
             File.WriteAllText(hashesFilePath, JsonSerializer.Serialize(hashes));
+        }
+        catch(Exception ex) {
+            Console.WriteLine($"Warning! Failed to save {fileName} hash\n{ex}");
+        }
+    }
+
+    private static unsafe void SaveCache(string fileName, byte* modified, int size) {
+        try {
+            Console.WriteLine($"Saving {fileName} cache");
+
+            byte[] bytes = new byte[size];
+            Marshal.Copy((IntPtr)modified, bytes, 0, size);
+            File.WriteAllBytes(Path.Combine(cachePath, fileName), bytes);
         }
         catch(Exception ex) {
             Console.WriteLine($"Warning! Failed to save {fileName} cache\n{ex}");
