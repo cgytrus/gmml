@@ -4,10 +4,17 @@ using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 
+// rider, this is a GOD DAMN PUBLIC API
+// CAN YOU SHUT UP ALREADY PLEASE thanks
+// ReSharper disable MemberCanBePrivate.Global MemberCanBeInternal UnusedMember.Global
+// ReSharper disable UnusedMethodReturnValue.Global OutParameterValueIsAlwaysDiscarded.Global
+
 namespace GmmlHooker;
 
 // ReSharper disable once ClassNeverInstantiated.Global
 public class Hooker : IGameMakerMod {
+    private static Dictionary<string, UndertaleCode> _originalCodes = new();
+
     public void Load(int audioGroup, UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies,
         IEnumerable<ModMetadata> queuedMods) { /* TODO: define hooks in JSON? maybe? */ }
 
@@ -170,9 +177,7 @@ popz.v
         UndertaleCodeLocals hookedCodeLocals = data.CodeLocals.ByName(code);
 
         string originalName = $"gmml_{hookedCode.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
-
-        CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _);
-
+        _originalCodes.TryAdd(code, CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _));
         ReplaceGmlSafe(hookedCode, hook.Replace("#orig#", $"{originalName}"), data);
     }
 
@@ -186,6 +191,8 @@ popz.v
         UndertaleCode originalCodeClone =
             CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _);
 
+        _originalCodes.TryAdd(hookedCode.Name.Content, originalCodeClone);
+
         // remove the function definition stuff
         originalCodeClone.Instructions.RemoveAt(0);
         originalCodeClone.Instructions.RemoveRange(originalCodeClone.Instructions.Count - 10, 10);
@@ -193,4 +200,21 @@ popz.v
         ReplaceWithScriptDefinition(data, script, hook.Replace("#orig#", $"{originalName}"), hookedCode,
             hookedCodeLocals, $"gml_Script_{script}");
     }
+
+    public delegate void AsmHook(UndertaleCode code, UndertaleCodeLocals locals);
+
+    public static void HookAsm(UndertaleData data, string name, AsmHook hook) {
+        if(_originalCodes.TryGetValue(name, out UndertaleCode? code))
+            HookAsm(code, data.CodeLocals.ByName(code.Name.Content), hook);
+        else
+            HookAsm(data.Code.ByName(name), data.CodeLocals.ByName(name), hook);
+    }
+
+    public static void HookAsm(UndertaleCode code, UndertaleCodeLocals locals, AsmHook hook) {
+        hook(code, locals);
+        code.UpdateAddresses();
+    }
+
+    public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleData data, UndertaleCodeLocals locals) =>
+        locals.Locals.ToDictionary(local => local.Name.Content, local => data.Variables[(int)local.Index]);
 }

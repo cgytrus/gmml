@@ -37,6 +37,14 @@ if keyboard_check_pressed(vk_f2)
 }
 ");
 
+        // poor epilepsy warning, i'm hooking it for the third time already
+        Hooker.HookAsm(data, "gml_Object_obj_epilepsy_warning_Create_0", (code, locals) => {
+            AsmCursor cursor = new(data, code, locals);
+            cursor.GotoNext("pushi.e 180");
+            cursor.Replace("pushi.e 10");
+            cursor.Finish();
+        });
+
         Hooker.HookScript(data, "scr_move_like_a_snail",
             @"#orig#(argument0, argument1, argument2, argument3)
 show_debug_message(""move like a snail"")
