@@ -4,6 +4,8 @@
 #include <Windows.h>
 #include <filesystem>
 
+#include "../include/sigscan.h"
+
 #include "../lib/minhook/include/MinHook.h"
 
 #include <fstream>
@@ -66,17 +68,49 @@ void loadSettings(const char* path) {
     input.close();
 }
 
-using string_t = std::basic_string<char_t>;
+uintptr_t mmAllocAddress = 0x0;
+uintptr_t mmFreeAddress = 0x0;
+uintptr_t p_gGameFileNameAddress = 0x0;
+uintptr_t LoadSave_ReadBundleFileAddress = 0x0;
+
+#include <Psapi.h>
+#include <processthreadsapi.h>
+
+void findAddresses() {
+    const auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
+    MODULEINFO info;
+    GetModuleInformation(GetCurrentProcess(), GetModuleHandle(0), &info, sizeof(MODULEINFO));
+
+#define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
+
+    mmAllocAddress = find("40 53 56 57 48 81 ec 50 04 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 41 ?? ?? ?? 48 8b ?? 48 85 ?? 75 ?? 33 c0 e9 ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d8 48 85 c0");
+
+    mmFreeAddress = find("48 85 c9 0f 84 ?? ?? ?? ?? 53 48 83 ec 30 48 8b d9 48 8b ?? ?? ?? ?? ?? 48 85 c9 75 ?? b9 08 00 00 00 e8 ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? 48 8b c8 e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ??");
+
+    auto p_gGameFileNameAddressTemp = find("8d ?? ?? 03 f1 48 63 ce 45 0f b6 cd 41 b8 ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b f8 48 8b ?? ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 4c 8b ?? ?? ?? ?? ?? 8b d6 48 8b cf");
+
+    p_gGameFileNameAddressTemp += 47;
+    auto p_gGameFileNameAddressTemp2 =
+        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 4) << 0x0 |
+        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 3) << 0x8 |
+        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 2) << 0x10 |
+        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 1) << 0x18;
+    p_gGameFileNameAddress = p_gGameFileNameAddressTemp + p_gGameFileNameAddressTemp2;
+
+    LoadSave_ReadBundleFileAddress = find("40 53 48 81 ec 30 08 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 48 8b da 4c 8b c1 ba 00 08 00 00 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d3 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? ?? 48 33 cc e8 ?? ?? ?? ?? 48 81 c4 30 08 00 00 5b c3");
+
+#undef find
+}
 
 void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool unk3) {
-    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    return ((void* (__cdecl*)(unsigned long long, char const*, int, bool))(base + 0x339090))(size, why, unk2, unk3);
+    return ((void* (__cdecl*)(unsigned long long, char const*, int, bool))mmAllocAddress)(size, why, unk2, unk3);
 }
 
 static void __cdecl mmFree(void const* block) {
-    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    ((void (__cdecl*)(void const*))(base + 0x339500))(block);
+    ((void (__cdecl*)(void const*))mmFreeAddress)(block);
 }
+
+using string_t = std::basic_string<char_t>;
 
 namespace {
     // Globals to hold hostfxr exports
@@ -162,7 +196,7 @@ unsigned char* modifyAudioGroup(unsigned char* orig, int* size, int number) {
 unsigned char* (__cdecl* LoadSave_ReadBundleFile_orig)(char*, int*);
 unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
     auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    auto g_pGameFileName = (char**)(base + 0x5e1dc8);
+    auto g_pGameFileName = (char**)p_gGameFileNameAddress;
 
     auto fsPath = std::filesystem::path(path);
     auto fsPathStem = fsPath.stem().string();
@@ -195,10 +229,10 @@ bool loadModLoader() {
     loadSettings("gmml.cfg");
     if(settings.showConsole) AllocConsole();
 
-    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
+    findAddresses();
 
     if(MH_Initialize() != MH_OK) return false;
-    if(MH_CreateHook(reinterpret_cast<void*>(base + 0x8d460), LoadSave_ReadBundleFile_hook,
+    if(MH_CreateHook(reinterpret_cast<void*>(LoadSave_ReadBundleFileAddress), LoadSave_ReadBundleFile_hook,
         reinterpret_cast<void**>(&LoadSave_ReadBundleFile_orig)) != MH_OK)
         return false;
     if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK) return false;

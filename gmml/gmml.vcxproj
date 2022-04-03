@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;GMML_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClInclude Include="include\gmml.h" />
     <ClInclude Include="include\proxy.h" />
+    <ClInclude Include="include\sigscan.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />
     <ClInclude Include="lib\minhook\src\buffer.h" />
     <ClInclude Include="lib\minhook\src\hde\hde32.h" />

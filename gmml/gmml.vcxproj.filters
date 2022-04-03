@@ -92,6 +92,9 @@
     <ClInclude Include="lib\minhook\include\MinHook.h">
       <Filter>lib\minhook\include</Filter>
     </ClInclude>
+    <ClInclude Include="include\sigscan.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\nethost\nethost.lib">
