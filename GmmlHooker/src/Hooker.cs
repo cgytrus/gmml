@@ -12,19 +12,23 @@ public class Hooker : IGameMakerMod {
         IEnumerable<ModMetadata> queuedMods) { /* TODO: define hooks in JSON? maybe? */ }
 
     public static void ReplaceGmlSafe(UndertaleCode code, string gmlCode, UndertaleData data) {
-        try {
-            code.ReplaceGML(gmlCode, data);
-        }
+        try { code.ReplaceGML(gmlCode, data); }
         // UndertaleModLib is trying to write profile cache but fails, we don't care
-        catch(Exception) { /* ignored */ }
+        catch(Exception ex) {
+            if(ex.Message.StartsWith("Error during writing of GML code to profile", StringComparison.InvariantCulture))
+                return;
+            throw;
+        }
     }
 
     public static void AppendGmlSafe(UndertaleCode code, string gmlCode, UndertaleData data) {
-        try {
-            code.AppendGML(gmlCode, data);
-        }
+        try { code.AppendGML(gmlCode, data); }
         // UndertaleModLib is trying to write profile cache but fails, we don't care
-        catch(Exception) { /* ignored */ }
+        catch(Exception ex) {
+            if(ex.Message.StartsWith("Error during writing of GML code to profile", StringComparison.InvariantCulture))
+                return;
+            throw;
+        }
     }
 
     public static UndertaleCode CreateCode(UndertaleData data, UndertaleString name, out UndertaleCodeLocals locals) {
