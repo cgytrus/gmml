@@ -2,6 +2,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 using Semver;
@@ -12,9 +14,13 @@ namespace GmmlPatcher;
 
 // ReSharper disable once UnusedType.Global
 public static class Patcher {
+    private static readonly string patcherPath = Path.Combine("gmml", "patcher");
     private static readonly string modsPath = Path.Combine("gmml", "mods");
+    private static readonly string cachePath = Path.Combine("gmml", "cache");
+    private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
 
     private static bool _errored;
+    private static Dictionary<string, string>? _hashes;
 
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
         _queuedMods;
@@ -26,12 +32,144 @@ public static class Patcher {
     [UnmanagedCallersOnly]
     public static unsafe byte* ModifyData(int audioGroup, byte* original, int* size) {
         if(_errored) return original;
-        try { return LoadMods(audioGroup, original, size); }
+        try {
+            if(TryLoadCache(audioGroup, original, size, out byte* modified, out string fileName, out MD5 hash))
+                return modified;
+            _hashes ??= new Dictionary<string, string>(1);
+            SaveCache(fileName, hash, _hashes);
+            modified = LoadMods(audioGroup, original, size);
+            return modified;
+        }
         catch(Exception ex) {
             _errored = true;
             Console.WriteLine($"Error while loading mods! Loading vanilla\n{ex}");
         }
+        finally {
+            Console.WriteLine("Running full garbage collection");
+            GC.Collect();
+        }
         return original;
+    }
+
+    private static unsafe bool TryLoadCache(int audioGroup, byte* original, int* size, out byte* modified,
+        out string fileName, out MD5 hash) {
+        modified = original;
+        fileName = GetFileNameFromAudioGroup(audioGroup);
+
+        byte[] data = new byte[*size];
+        Marshal.Copy((IntPtr)original, data, 0, data.Length);
+        hash = HashCurrentSetup(audioGroup, data);
+
+        if(hash.Hash is null) {
+            Console.WriteLine($"Warning! Failed to hash {fileName}");
+            return false;
+        }
+
+        if(!Directory.Exists(cachePath))
+            Directory.CreateDirectory(cachePath);
+
+        if(!File.Exists(hashesFilePath)) {
+            Console.WriteLine("No cache found");
+            return false;
+        }
+
+        _hashes ??= JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(hashesFilePath));
+
+        if(_hashes is null) {
+            Console.WriteLine("Warning! Failed to read cache hashes");
+            File.Delete(hashesFilePath);
+            return false;
+        }
+
+        try {
+            foreach((string? hashFileName, string? hashText) in _hashes) {
+                if(hashFileName != fileName) continue;
+                return TryLoadCache(ref modified, size, fileName, hash, hashText);
+            }
+        }
+        catch(Exception ex) {
+            Console.WriteLine($"Warning! Failed to read cache hash for {fileName}\n{ex}");
+            _hashes.Remove(fileName);
+            return false;
+        }
+
+        Console.WriteLine($"No cache found for {fileName}");
+        return false;
+    }
+
+    private static unsafe bool TryLoadCache(ref byte* modified, int* size, string fileName, HashAlgorithm hash,
+        string hashText) {
+        byte[] cacheHash = Convert.FromHexString(hashText);
+
+        if(hash.Hash!.Length == 0 || cacheHash.Length == 0 || hash.Hash.Length != cacheHash.Length) {
+            Console.WriteLine($"Outdated cache for {fileName}");
+            return false;
+        }
+
+        // ReSharper disable once LoopCanBeConvertedToQuery
+        for(int i = 0; i < hash.Hash.Length; i++) {
+            if(hash.Hash[i] == cacheHash[i])
+                continue;
+            Console.WriteLine($"Outdated cache for {fileName}");
+            return false;
+        }
+
+        Console.WriteLine($"Loading cached {fileName}");
+        byte[] fileBytes = File.ReadAllBytes(Path.Combine(cachePath, fileName));
+        *size = fileBytes.Length;
+        modified = (byte*)mmAlloc((ulong)*size, (sbyte*)0, 0x124, false);
+        Marshal.Copy(fileBytes, 0, (IntPtr)modified, fileBytes.Length);
+        return true;
+    }
+
+    private static void SaveCache(string fileName, HashAlgorithm hash, Dictionary<string, string> hashes) {
+        try {
+            Console.WriteLine($"Saving cache for {fileName}");
+
+            // already warned in TryLoadCache so we can just quietly return
+            if(hash.Hash is null)
+                return;
+
+            string hashString = BitConverter.ToString(hash.Hash).Replace("-", "").ToLower();
+            hashes[fileName] = hashString;
+            File.WriteAllText(hashesFilePath, JsonSerializer.Serialize(hashes));
+        }
+        catch(Exception ex) {
+            Console.WriteLine($"Warning! Failed to save hash of {fileName}\n{ex}");
+        }
+    }
+
+    private static MD5 HashCurrentSetup(int audioGroup, byte[] data) {
+        MD5 hash = MD5.Create();
+
+        AppendDirectoryToHash(hash, patcherPath);
+        AppendDirectoryToHash(hash, modsPath);
+
+        AppendFileToHash(hash, "version.dll");
+
+        byte[] audioGroupBytes = BitConverter.GetBytes(audioGroup);
+        hash.TransformBlock(audioGroupBytes, 0, audioGroupBytes.Length, audioGroupBytes, 0);
+
+        hash.TransformFinalBlock(data, 0, data.Length);
+
+        return hash;
+    }
+
+    // https://stackoverflow.com/a/15683147/10484146
+    private static void AppendDirectoryToHash(ICryptoTransform hash, string path) {
+        foreach(string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories).OrderBy(p => p)) {
+            // hash path
+            byte[] pathBytes = Encoding.UTF8.GetBytes(path.ToLower());
+            hash.TransformBlock(pathBytes, 0, pathBytes.Length, pathBytes, 0);
+
+            // hash contents
+            AppendFileToHash(hash, file);
+        }
+    }
+
+    private static void AppendFileToHash(ICryptoTransform hash, string path) {
+        byte[] contentBytes = File.ReadAllBytes(path);
+        hash.TransformBlock(contentBytes, 0, contentBytes.Length, contentBytes, 0);
     }
 
     private static unsafe byte* LoadMods(int audioGroup, byte* original, int* size) {
@@ -252,13 +390,15 @@ public static class Patcher {
     private static void LogModLoadError(string id, Exception exception) =>
         Console.WriteLine($"Error! Failed when loading mod {id}:\n{exception}");
 
+    private static string GetFileNameFromAudioGroup(int audioGroup) =>
+        audioGroup < 0 ? "data.win" : $"audiogroup{audioGroup}.dat";
+
     private static unsafe byte* UndertaleDataToBytes(UndertaleData data, int* size) {
         using MemoryStream stream = new(*size);
         UndertaleIO.Write(stream, data);
         *size = (int)stream.Length;
         byte* bytesPtr = (byte*)mmAlloc((ulong)*size, (sbyte*)0, 0x124, false);
         Marshal.Copy(stream.GetBuffer(), 0, (IntPtr)bytesPtr, *size);
-        GC.Collect();
         return bytesPtr;
     }
 }

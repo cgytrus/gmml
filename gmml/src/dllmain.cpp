@@ -166,32 +166,18 @@ bool startClrHost() {
     return true;
 }
 
-unsigned char* modifyGameData(unsigned char* orig, int* size) {
-    if(settings.debug)
-        MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
+unsigned char* modifyData(int audioGroup, unsigned char* orig, int* size) {
+    if(settings.debug) {
+        if(audioGroup < 0) MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
+        else MessageBoxA(NULL, (std::string("Loading audio group ") + std::to_string(audioGroup)).c_str(), "Info", MB_OK);
+    }
 
     if(modifyDataManaged == nullptr && !startClrHost())
         return orig;
 
 #pragma warning(push)
 #pragma warning(disable : 6011)
-    auto bytes = modifyDataManaged(-1, orig, size);
-#pragma warning(pop)
-
-    if(bytes != orig) mmFree(orig);
-    return bytes;
-}
-
-unsigned char* modifyAudioGroup(unsigned char* orig, int* size, int number) {
-    if(settings.debug)
-        MessageBoxA(NULL, (std::string("Loading audio group ") + std::to_string(number)).c_str(), "Info", MB_OK);
-
-    if(modifyDataManaged == nullptr && !startClrHost())
-        return orig;
-
-#pragma warning(push)
-#pragma warning(disable : 6011)
-    auto bytes = modifyDataManaged(number, orig, size);
+    auto bytes = modifyDataManaged(audioGroup, orig, size);
 #pragma warning(pop)
 
     if(bytes != orig) mmFree(orig);
@@ -215,12 +201,12 @@ unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
     }
 
     if(strcmp(path, *g_pGameFileName) == 0) {
-        return modifyGameData(LoadSave_ReadBundleFile_orig(path, size), modifySize);
+        return modifyData(-1, LoadSave_ReadBundleFile_orig(path, size), modifySize);
     }
     else if(fsPath.extension() == ".dat" && fsPathStem.starts_with(audioGroupName)) {
         try {
-            auto number = std::stoi(fsPathStem.substr(strlen(audioGroupName)));
-            return modifyAudioGroup(LoadSave_ReadBundleFile_orig(path, size), modifySize, number);
+            auto audioGroup = std::stoi(fsPathStem.substr(strlen(audioGroupName)));
+            return modifyData(audioGroup, LoadSave_ReadBundleFile_orig(path, size), modifySize);
         }
         catch(std::invalid_argument) { }
     }
