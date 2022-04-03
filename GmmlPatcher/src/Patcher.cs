@@ -11,18 +11,30 @@ using UndertaleModLib;
 namespace GmmlPatcher;
 
 // ReSharper disable once UnusedType.Global
-public static unsafe class Patcher {
+public static class Patcher {
     private static readonly string modsPath = Path.Combine("gmml", "mods");
+
+    private static bool _errored;
 
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
         _queuedMods;
 
     [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
+    private static extern unsafe void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
 
     // ReSharper disable once UnusedMember.Global
     [UnmanagedCallersOnly]
-    public static byte* ModifyData(int audioGroup, byte* original, int* size) {
+    public static unsafe byte* ModifyData(int audioGroup, byte* original, int* size) {
+        if(_errored) return original;
+        try { return LoadMods(audioGroup, original, size); }
+        catch(Exception ex) {
+            _errored = true;
+            Console.WriteLine($"Error while loading mods! Loading vanilla\n{ex}");
+        }
+        return original;
+    }
+
+    private static unsafe byte* LoadMods(int audioGroup, byte* original, int* size) {
         Console.WriteLine(audioGroup < 0 ? "Modifying game data" : $"Modifying audio group {audioGroup}");
 
         Console.WriteLine("Deserializing data");
@@ -240,7 +252,7 @@ public static unsafe class Patcher {
     private static void LogModLoadError(string id, Exception exception) =>
         Console.WriteLine($"Error! Failed when loading mod {id}:\n{exception}");
 
-    private static byte* UndertaleDataToBytes(UndertaleData data, int* size) {
+    private static unsafe byte* UndertaleDataToBytes(UndertaleData data, int* size) {
         using MemoryStream stream = new(*size);
         UndertaleIO.Write(stream, data);
         *size = (int)stream.Length;

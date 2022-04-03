@@ -76,7 +76,7 @@ uintptr_t LoadSave_ReadBundleFileAddress = 0x0;
 #include <Psapi.h>
 #include <processthreadsapi.h>
 
-void findAddresses() {
+bool findAddresses() {
     const auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
     MODULEINFO info;
     GetModuleInformation(GetCurrentProcess(), GetModuleHandle(0), &info, sizeof(MODULEINFO));
@@ -100,6 +100,11 @@ void findAddresses() {
     LoadSave_ReadBundleFileAddress = find("40 53 48 81 ec 30 08 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 48 8b da 4c 8b c1 ba 00 08 00 00 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d3 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? ?? 48 33 cc e8 ?? ?? ?? ?? 48 81 c4 30 08 00 00 5b c3");
 
 #undef find
+
+    return mmAllocAddress != 0x0 &&
+        mmFreeAddress != 0x0 &&
+        p_gGameFileNameAddressTemp != 0x0 &&
+        LoadSave_ReadBundleFileAddress != 0x0;
 }
 
 void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool unk3) {
@@ -229,7 +234,7 @@ bool loadModLoader() {
     loadSettings("gmml.cfg");
     if(settings.showConsole) AllocConsole();
 
-    findAddresses();
+    if(!findAddresses()) return false;
 
     if(MH_Initialize() != MH_OK) return false;
     if(MH_CreateHook(reinterpret_cast<void*>(LoadSave_ReadBundleFileAddress), LoadSave_ReadBundleFile_hook,
