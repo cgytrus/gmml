@@ -61,7 +61,7 @@ public static class Patcher {
         hash = HashCurrentSetup(audioGroup, data);
 
         if(hash.Hash is null) {
-            Console.WriteLine($"Warning! Failed to hash {fileName}");
+            Console.WriteLine($"Warning! Failed to {fileName} hash");
             return false;
         }
 
@@ -88,12 +88,12 @@ public static class Patcher {
             }
         }
         catch(Exception ex) {
-            Console.WriteLine($"Warning! Failed to read cache hash for {fileName}\n{ex}");
+            Console.WriteLine($"Warning! Failed to read {fileName} cache hash\n{ex}");
             _hashes.Remove(fileName);
             return false;
         }
 
-        Console.WriteLine($"No cache found for {fileName}");
+        Console.WriteLine($"No cached {fileName} found");
         return false;
     }
 
@@ -102,7 +102,7 @@ public static class Patcher {
         byte[] cacheHash = Convert.FromHexString(hashText);
 
         if(hash.Hash!.Length == 0 || cacheHash.Length == 0 || hash.Hash.Length != cacheHash.Length) {
-            Console.WriteLine($"Outdated cache for {fileName}");
+            Console.WriteLine($"Outdated {fileName} cache");
             return false;
         }
 
@@ -110,7 +110,7 @@ public static class Patcher {
         for(int i = 0; i < hash.Hash.Length; i++) {
             if(hash.Hash[i] == cacheHash[i])
                 continue;
-            Console.WriteLine($"Outdated cache for {fileName}");
+            Console.WriteLine($"Outdated {fileName} cache");
             return false;
         }
 
@@ -124,7 +124,7 @@ public static class Patcher {
 
     private static void SaveCache(string fileName, HashAlgorithm hash, Dictionary<string, string> hashes) {
         try {
-            Console.WriteLine($"Saving cache for {fileName}");
+            Console.WriteLine($"Saving {fileName} cache");
 
             // already warned in TryLoadCache so we can just quietly return
             if(hash.Hash is null)
@@ -135,7 +135,7 @@ public static class Patcher {
             File.WriteAllText(hashesFilePath, JsonSerializer.Serialize(hashes));
         }
         catch(Exception ex) {
-            Console.WriteLine($"Warning! Failed to save hash of {fileName}\n{ex}");
+            Console.WriteLine($"Warning! Failed to save {fileName} cache\n{ex}");
         }
     }
 
