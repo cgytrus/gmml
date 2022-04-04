@@ -183,13 +183,13 @@ popz.v
         return codeClone;
     }
 
-    public static void HookCode(UndertaleData data, string code, string hook) {
-        UndertaleCode hookedCode = data.Code.ByName(code);
-        UndertaleCodeLocals hookedCodeLocals = data.CodeLocals.ByName(code);
+    public static void HookCode(UndertaleData data, string code, string hook) =>
+        HookCode(data, data.Code.ByName(code), data.CodeLocals.ByName(code), hook);
 
-        string originalName = $"gmml_{hookedCode.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
-        _originalCodes.TryAdd(code, CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _));
-        ReplaceGmlSafe(hookedCode, hook.Replace("#orig#", $"{originalName}"), data);
+    public static void HookCode(UndertaleData data, UndertaleCode code, UndertaleCodeLocals locals, string hook) {
+        string originalName = $"gmml_{code.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
+        _originalCodes.TryAdd(code.Name.Content, CloneCode(data, originalName, code, locals, out _));
+        ReplaceGmlSafe(code, hook.Replace("#orig#", $"{originalName}"), data);
     }
 
     public static void HookScript(UndertaleData data, string script, string hook) {
