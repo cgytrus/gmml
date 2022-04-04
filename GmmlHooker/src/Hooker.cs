@@ -60,9 +60,10 @@ public class Hooker : IGameMakerMod {
         return mainCode;
     }
 
-    public static UndertaleScript CreateSimpleScript(UndertaleData data, string name, string code) {
+    public static UndertaleScript CreateSimpleScript(UndertaleData data, string name, string code, ushort argCount) {
         UndertaleString mainName = data.Strings.MakeString(name);
         UndertaleCode mainCode = CreateCode(data, mainName, out _);
+        mainCode.ArgumentsCount = argCount;
 
         ReplaceGmlSafe(mainCode, code, data);
 

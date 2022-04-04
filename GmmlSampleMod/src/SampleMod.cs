@@ -1,17 +1,27 @@
-﻿using GmmlHooker;
+﻿using System.Text.Json.Serialization;
+
+using GmmlHooker;
 
 using GmmlPatcher;
 
 using UndertaleModLib;
-using UndertaleModLib.Models;
 
 namespace GmmlSampleMod;
 
-// ReSharper disable once UnusedType.Global
+// ReSharper disable once ClassNeverInstantiated.Global
 public class SampleMod : IGameMakerMod {
+    private struct Config {
+        public int epilepsyWait { get; } = 10;
+
+        [JsonConstructor]
+        public Config(int epilepsyWait) => this.epilepsyWait = epilepsyWait;
+    }
+
     public void Load(int audioGroup, UndertaleData data, ModMetadata currentMod,
         IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
         if(audioGroup != -1) return;
+        Config config = GmmlConfig.Config.LoadPatcherConfig<Config>("sampleMod.json");
+
         Hooker.CreateScript(data, "scr_test_script", @"show_debug_message(""hi from test script"")
 if argument1 == false {
     return false
@@ -26,7 +36,9 @@ txt_1 = ""eat my nuts""");
 
         Hooker.HookCode(data, "gml_Object_obj_epilepsy_warning_Create_0",
             @"#orig#()
-txt_2 = ""making sure it actually works""");
+var default_config = json_parse(""{ \""text\"": \""test\"" }"")
+var config = gmml_config_load(""sample_mod_epilepsy_text.json"", default_config)
+txt_2 = config.text");
 
         Hooker.HookCode(data, "gml_Object_obj_player_Step_0",
             @"#orig#()
@@ -41,7 +53,7 @@ if keyboard_check_pressed(vk_f2)
         Hooker.HookAsm(data, "gml_Object_obj_epilepsy_warning_Create_0", (code, locals) => {
             AsmCursor cursor = new(data, code, locals);
             cursor.GotoNext("pushi.e 180");
-            cursor.Replace("pushi.e 10");
+            cursor.Replace($"pushi.e {config.epilepsyWait}");
             cursor.Finish();
         });
 

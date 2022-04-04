@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlHooker", "GmmlHooker\GmmlHooker.csproj", "{718EEC84-EF03-4ED1-900E-2B5B30EB776D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlConfig", "GmmlConfig\GmmlConfig.csproj", "{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -59,6 +61,14 @@ Global
 		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x64.Build.0 = Release|Any CPU
 		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x86.ActiveCfg = Release|Any CPU
 		{718EEC84-EF03-4ED1-900E-2B5B30EB776D}.Release|x86.Build.0 = Release|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Debug|x64.Build.0 = Debug|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Debug|x86.Build.0 = Debug|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Release|x64.ActiveCfg = Release|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Release|x64.Build.0 = Release|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Release|x86.ActiveCfg = Release|Any CPU
+		{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

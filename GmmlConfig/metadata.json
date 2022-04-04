@@ -1,0 +1,12 @@
+{
+    "id": "com.github.cgytrus.gmml.config",
+    "name": "GMML Config",
+    "version": "0.1.0",
+    "authors": [ "ConfiG" ],
+    "dependencies": [
+        {
+            "id": "com.github.cgytrus.gmml.hooker",
+            "version": "0.1.0"
+        }
+    ]
+}
