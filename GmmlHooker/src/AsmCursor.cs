@@ -34,16 +34,14 @@ public class AsmCursor {
 
     public void Emit(UndertaleInstruction instruction) {
         _code.Instructions.Insert(index, instruction);
-        _code.UpdateAddresses();
-        index++;
+        InstructionChanged();
     }
 
     public void Emit(string source) => Emit(Assemble(source));
 
     public void Replace(UndertaleInstruction instruction) {
         _code.Instructions[index] = instruction;
-        _code.UpdateAddresses();
-        index++;
+        InstructionChanged();
     }
 
     public void Replace(string source) => Replace(Assemble(source));
@@ -66,12 +64,6 @@ public class AsmCursor {
     public void GotoPrev(Predicate<UndertaleInstruction> match) =>
         index = _code.Instructions.FindLastIndex(0, index - 1, match);
 
-    public void Finish() {
-        _code.UpdateAddresses();
-        foreach((UndertaleInstruction? instruction, string? label) in _labelTargets)
-            instruction.JumpOffset = (int)_labels[label].Address - (int)instruction.Address;
-    }
-
     private UndertaleInstruction Assemble(string source) {
         UndertaleInstruction instruction = Assembler.AssembleOne(source, _data.Functions, _data.Variables,
             _data.Strings, _locals, out string? label, _data);
@@ -80,5 +72,12 @@ public class AsmCursor {
             _labelTargets.Add(instruction, label);
 
         return instruction;
+    }
+
+    private void InstructionChanged() {
+        _code.UpdateAddresses();
+        foreach((UndertaleInstruction? target, string? label) in _labelTargets)
+            target.JumpOffset = (int)_labels[label].Address - (int)target.Address;
+        index++;
     }
 }

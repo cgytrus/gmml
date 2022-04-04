@@ -54,7 +54,6 @@ if keyboard_check_pressed(vk_f2)
             AsmCursor cursor = new(data, code, locals);
             cursor.GotoNext("pushi.e 180");
             cursor.Replace($"pushi.e {config.epilepsyWait}");
-            cursor.Finish();
         });
 
         Hooker.HookScript(data, "scr_move_like_a_snail",
