@@ -44,7 +44,7 @@ file_text_close(config_file)
 
         Hooker.CreateSimpleScript(data, "gmml_config_load", @"
 var config_file = gmml_config_open_read(argument0, argument1)
-var config = json_parse(gmml_read_all_text(config_file))
+var config = json_parse(file_text_read_string(config_file))
 file_text_close(config_file)
 return config
 ", 2);
