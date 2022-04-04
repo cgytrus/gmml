@@ -15,8 +15,10 @@ namespace GmmlHooker;
 public class Hooker : IGameMakerMod {
     private static Dictionary<string, UndertaleCode> _originalCodes = new();
 
-    public void Load(int audioGroup, UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies,
-        IEnumerable<ModMetadata> queuedMods) { /* TODO: define hooks in JSON? maybe? */ }
+    public void Load(int audioGroup, UndertaleData data, ModMetadata currentMod,
+        IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
+        // TODO: define hooks in JSON? maybe?
+    }
 
     public static void ReplaceGmlSafe(UndertaleCode code, string gmlCode, UndertaleData data) {
         try { code.ReplaceGML(gmlCode, data); }

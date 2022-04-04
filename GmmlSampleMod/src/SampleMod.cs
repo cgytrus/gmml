@@ -9,8 +9,8 @@ namespace GmmlSampleMod;
 
 // ReSharper disable once UnusedType.Global
 public class SampleMod : IGameMakerMod {
-    public void Load(int audioGroup, UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies,
-        IEnumerable<ModMetadata> queuedMods) {
+    public void Load(int audioGroup, UndertaleData data, ModMetadata currentMod,
+        IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
         if(audioGroup != -1) return;
         Hooker.CreateScript(data, "scr_test_script", @"show_debug_message(""hi from test script"")
 if argument1 == false {

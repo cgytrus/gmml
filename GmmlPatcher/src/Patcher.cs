@@ -406,7 +406,7 @@ public static class Patcher {
             }
 
             (Activator.CreateInstance(type) as IGameMakerMod)?
-                .Load(audioGroup, data, availableDependencies, queuedMods);
+                .Load(audioGroup, data, metadata, availableDependencies, queuedMods);
         }
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
