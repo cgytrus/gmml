@@ -14,6 +14,7 @@ namespace GmmlPatcher;
 
 // ReSharper disable once UnusedType.Global
 public static class Patcher {
+    public static readonly string configPath = Path.Combine("gmml", "config");
     private static readonly string patcherPath = Path.Combine("gmml", "patcher");
     private static readonly string modsPath = Path.Combine("gmml", "mods");
     private static readonly string cachePath = Path.Combine("gmml", "cache");
@@ -21,7 +22,6 @@ public static class Patcher {
 
     private static bool _errored;
     private static Dictionary<string, string>? _hashes;
-    private static readonly Dictionary<int, HashSet<string>> additionHashFiles = new();
 
     private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
         _queuedMods;
@@ -51,17 +51,6 @@ public static class Patcher {
             GC.Collect();
         }
         return original;
-    }
-
-    public static void AddFileToHash(int audioGroup, string path) {
-        path = Path.GetRelativePath("./", path);
-
-        if(additionHashFiles.TryGetValue(audioGroup, out HashSet<string>? paths)) {
-            paths.Add(path);
-            return;
-        }
-
-        additionHashFiles[audioGroup] = new HashSet<string> { path };
     }
 
     private static unsafe bool TryLoadCache(int audioGroup, byte* original, int* size, out byte* modified,
@@ -176,12 +165,9 @@ public static class Patcher {
 
         AppendDirectoryToHash(hash, patcherPath);
         AppendDirectoryToHash(hash, modsPath);
+        AppendDirectoryToHash(hash, configPath);
 
         AppendFileToHash(hash, "version.dll");
-
-        if(additionHashFiles.TryGetValue(audioGroup, out HashSet<string>? paths))
-            foreach(string path in paths)
-                AppendFileToHash(hash, path);
 
         byte[] audioGroupBytes = BitConverter.GetBytes(audioGroup);
         hash.TransformBlock(audioGroupBytes, 0, audioGroupBytes.Length, audioGroupBytes, 0);
