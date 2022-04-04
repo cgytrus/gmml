@@ -165,7 +165,9 @@ public static class Patcher {
 
         AppendDirectoryToHash(hash, patcherPath);
         AppendDirectoryToHash(hash, modsPath);
-        AppendDirectoryToHash(hash, configPath);
+
+        if(Directory.Exists(configPath))
+            AppendDirectoryToHash(hash, configPath);
 
         AppendFileToHash(hash, "version.dll");
 
