@@ -16,7 +16,7 @@
 #include <assert.h>
 
 // .NET CLR hosting
-// https://github.com/dotnet/runtime/blob/main/docs/design/features/native-hosting.md
+// https://github.com/dotnet/docs/blob/main/docs/core/tutorials/netcore-hosting.md
 #include "../lib/nethost/nethost.h"
 #include "../lib/nethost/coreclr_delegates.h"
 #include "../lib/nethost/hostfxr.h"
