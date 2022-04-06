@@ -259,9 +259,10 @@ popz.v
     public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleData data, UndertaleCodeLocals locals) =>
         locals.Locals.ToDictionary(local => local.Name.Content, local => data.Variables[(int)local.Index]);
 
-    public static void AddSound(int currentAudioGroup, int audioGroup, string file, bool embed = true,
+    private static readonly UndertaleSound blankSound = new();
+    public static UndertaleSound AddSound(int currentAudioGroup, int audioGroup, string file, bool embed = true,
         bool decodeOnLoad = true) => AddSound(Patcher.data, currentAudioGroup, audioGroup, file, embed, decodeOnLoad);
-    public static void AddSound(UndertaleData data, int currentAudioGroup, int audioGroup, string file,
+    public static UndertaleSound AddSound(UndertaleData data, int currentAudioGroup, int audioGroup, string file,
         bool embed = true, bool decodeOnLoad = true) {
         if(currentAudioGroup == audioGroup)
             data.EmbeddedAudio.Add(new UndertaleEmbeddedAudio {
@@ -269,12 +270,12 @@ popz.v
             });
 
         if(currentAudioGroup != 0)
-            return;
+            return blankSound; // we don't care what data is in there, it's not gonna be used anyway
 
         if(!TryGetAudioEntryFlags(file, embed, decodeOnLoad, out UndertaleSound.AudioEntryFlags flags))
             Console.WriteLine($"Warning! Unsupported audio format ({file})");
 
-        AddSound(data, audioGroup, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file), flags);
+        return AddSound(data, audioGroup, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file), flags);
     }
 
     private static bool TryGetAudioEntryFlags(string file, bool embed, bool decodeOnLoad,
@@ -300,17 +301,19 @@ popz.v
         return true;
     }
 
-    private static void AddSound(UndertaleData data, int audioGroup, string name, string file,
+    private static UndertaleSound AddSound(UndertaleData data, int audioGroup, string name, string file,
         UndertaleSound.AudioEntryFlags flags) {
         // if the only flag is Regular, that means it's an external sound which doesn't have an ID
         int audioId = flags == UndertaleSound.AudioEntryFlags.Regular ? -1 : GetAudioId(data, audioGroup);
-        data.Sounds.Add(new UndertaleSound {
+        UndertaleSound sound = new() {
             Name = data.Strings.MakeString(name),
             Flags = flags,
             File = data.Strings.MakeString(file),
             AudioID = audioId,
             AudioGroup = data.AudioGroups[audioGroup]
-        });
+        };
+        data.Sounds.Add(sound);
+        return sound;
     }
 
     private static int GetAudioId(UndertaleData data, int audioGroup) {
