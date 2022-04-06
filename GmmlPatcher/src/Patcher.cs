@@ -20,11 +20,14 @@ public static class Patcher {
     private static readonly string cachePath = Path.Combine("gmml", "cache");
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
 
+    public static UndertaleData data { get; private set; } = new();
+    public static IEnumerable<ModMetadata> mods { get; private set; } = Array.Empty<ModMetadata>();
+
     private static bool _errored;
     private static Dictionary<string, string>? _hashes;
 
-    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>?
-        _queuedMods;
+    private static List<(ModMetadata metadata, Assembly assembly, IEnumerable<ModMetadata> dependencies)>? _queuedMods;
+    private static readonly Dictionary<Type, IGameMakerMod> modInstances = new();
 
     [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
@@ -202,7 +205,7 @@ public static class Patcher {
         Console.WriteLine("Deserializing data");
 
         using UnmanagedMemoryStream originalStream = new(original, *size);
-        UndertaleData data = UndertaleIO.Read(originalStream);
+        data = UndertaleIO.Read(originalStream);
 
         Console.WriteLine("Loading mods");
 
@@ -210,10 +213,9 @@ public static class Patcher {
 
         AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
 
-        IEnumerable<ModMetadata> exposedQueuedMods = _queuedMods.Select(mod => mod.metadata);
-        foreach((ModMetadata metadata, Assembly? assembly, IReadOnlyList<ModMetadata> availableDependencies) in
-            _queuedMods) {
-            if(!TryLoadMod(metadata, assembly, audioGroup, data, availableDependencies, exposedQueuedMods))
+        mods = _queuedMods.Select(mod => mod.metadata);
+        foreach((ModMetadata metadata, Assembly? assembly, IEnumerable<ModMetadata> dependencies) in _queuedMods) {
+            if(!TryLoadMod(metadata, assembly, audioGroup, dependencies))
                 continue;
             Console.WriteLine($"Loaded mod {metadata.id}");
         }
@@ -224,8 +226,7 @@ public static class Patcher {
         return UndertaleDataToBytes(data, size);
     }
 
-    private static List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)>
-        QueueMods() {
+    private static List<(ModMetadata metadata, Assembly assembly, IEnumerable<ModMetadata> dependencies)> QueueMods() {
         string whitelistPath = Path.Combine(modsPath, "whitelist.txt");
         string blacklistPath = Path.Combine(modsPath, "blacklist.txt");
 
@@ -246,13 +247,12 @@ public static class Patcher {
 
         SearchForMods(modsPath);
 
-        List<(ModMetadata metadata, Assembly assembly, IReadOnlyList<ModMetadata> availableDependencies)> queuedMods =
-            new();
+        List<(ModMetadata metadata, Assembly assembly, IEnumerable<ModMetadata> dependencies)> queuedMods = new();
         foreach((string path, ModMetadata metadata) in availableMods) {
             if(!TryQueueMod(path, metadata, availableMods, out Assembly? assembly,
-                out IReadOnlyList<ModMetadata> availableDependencies))
+                out IEnumerable<ModMetadata> dependencies))
                 continue;
-            queuedMods.Add((metadata, assembly, availableDependencies));
+            queuedMods.Add((metadata, assembly, dependencies));
         }
         return queuedMods;
     }
@@ -332,7 +332,7 @@ public static class Patcher {
 
     // ReSharper disable once CognitiveComplexity
     private static bool TryQueueMod(string path, ModMetadata metadata, IEnumerable<(string, ModMetadata)> availableMods,
-        [NotNullWhen(true)] out Assembly? assembly, out IReadOnlyList<ModMetadata> availableDependencies) {
+        [NotNullWhen(true)] out Assembly? assembly, out IEnumerable<ModMetadata> availableDependencies) {
         assembly = null;
 
         availableDependencies = GetAvailableDependencies(availableMods, metadata.dependencies, out bool allAvailable);
@@ -343,7 +343,7 @@ public static class Patcher {
         return false;
     }
 
-    private static IReadOnlyList<ModMetadata> GetAvailableDependencies(
+    private static IEnumerable<ModMetadata> GetAvailableDependencies(
         IEnumerable<(string, ModMetadata metadata)> availableMods, IEnumerable<ModMetadata.ModDependency> dependencies,
         out bool allAvailable) {
         List<ModMetadata> availableDependencies = new();
@@ -384,7 +384,7 @@ public static class Patcher {
     }
 
     private static bool TryLoadMod(ModMetadata metadata, Assembly assembly, int audioGroup,
-        UndertaleData data, IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
+        IEnumerable<ModMetadata> dependencies) {
         try {
             Type? type = assembly.GetTypes()
                 .FirstOrDefault(modType => modType.GetInterfaces().Contains(typeof(IGameMakerMod)));
@@ -393,8 +393,13 @@ public static class Patcher {
                 return false;
             }
 
-            (Activator.CreateInstance(type) as IGameMakerMod)?
-                .Load(audioGroup, data, metadata, availableDependencies, queuedMods);
+            if(!modInstances.TryGetValue(type, out IGameMakerMod? mod)) {
+                mod = Activator.CreateInstance(type) as IGameMakerMod;
+                if(mod is not null)
+                    modInstances.Add(type, mod);
+            }
+
+            mod?.Load(audioGroup, metadata, dependencies);
         }
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);

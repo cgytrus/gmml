@@ -15,18 +15,20 @@ namespace GmmlHooker;
 public class Hooker : IGameMakerMod {
     private static Dictionary<string, UndertaleCode> _originalCodes = new();
 
-    public void Load(int audioGroup, UndertaleData data, ModMetadata currentMod,
-        IReadOnlyList<ModMetadata> availableDependencies, IEnumerable<ModMetadata> queuedMods) {
+    public void Load(int audioGroup, ModMetadata currentMod, IEnumerable<ModMetadata> dependencies) {
         if(audioGroup != -1) return;
         // TODO: define hooks in JSON? maybe?
 
-        CreateSimpleScript(data, "gmml_read_all_text", @"
+        CreateSimpleScript("gmml_read_all_text", @"
 var file_buffer = buffer_load(argument0);
 var text = buffer_read(file_buffer, buffer_string);
 buffer_delete(file_buffer);
 return text
 ", 1);
     }
+
+    public static void ReplaceGmlSafe(UndertaleCode code, string gmlCode) =>
+        ReplaceGmlSafe(code, gmlCode, Patcher.data);
 
     public static void ReplaceGmlSafe(UndertaleCode code, string gmlCode, UndertaleData data) {
         try { code.ReplaceGML(gmlCode, data); }
@@ -38,6 +40,9 @@ return text
         }
     }
 
+    public static void AppendGmlSafe(UndertaleCode code, string gmlCode) =>
+        AppendGmlSafe(code, gmlCode, Patcher.data);
+
     public static void AppendGmlSafe(UndertaleCode code, string gmlCode, UndertaleData data) {
         try { code.AppendGML(gmlCode, data); }
         // UndertaleModLib is trying to write profile cache but fails, we don't care
@@ -47,6 +52,9 @@ return text
             throw;
         }
     }
+
+    public static void CreateCode(UndertaleString name, out UndertaleCodeLocals locals) =>
+        CreateCode(Patcher.data, name, out locals);
 
     public static UndertaleCode CreateCode(UndertaleData data, UndertaleString name, out UndertaleCodeLocals locals) {
         locals = new UndertaleCodeLocals {
@@ -68,6 +76,9 @@ return text
         return mainCode;
     }
 
+    public static UndertaleScript CreateSimpleScript(string name, string code, ushort argCount) =>
+        CreateSimpleScript(Patcher.data, name, code, argCount);
+
     public static UndertaleScript CreateSimpleScript(UndertaleData data, string name, string code, ushort argCount) {
         UndertaleString mainName = data.Strings.MakeString(name);
         UndertaleCode mainCode = CreateCode(data, mainName, out _);
@@ -83,6 +94,9 @@ return text
 
         return script;
     }
+
+    public static UndertaleScript CreateScript(string name, string code, ushort argCount) =>
+        CreateScript(Patcher.data, name, code, argCount);
 
     public static UndertaleScript CreateScript(UndertaleData data, string name, string code, ushort argCount) {
         UndertaleString mainName = data.Strings.MakeString(name);
@@ -130,6 +144,10 @@ return text
         return script;
     }
 
+    public static void ReplaceWithScriptDefinition(string name, string gmlCode, UndertaleCode code,
+        UndertaleCodeLocals locals, string intermediaryName) =>
+        ReplaceWithScriptDefinition(Patcher.data, name, gmlCode, code, locals, intermediaryName);
+
     private static void ReplaceWithScriptDefinition(UndertaleData data, string name, string gmlCode, UndertaleCode code,
         UndertaleCodeLocals locals, string intermediaryName) {
         ReplaceGmlSafe(code, gmlCode, data);
@@ -153,6 +171,10 @@ popz.v
 
 :[end]", data));
     }
+
+    public static UndertaleCode ReplaceWithScriptDefinition(string cloneName, UndertaleCode cloning,
+        UndertaleCodeLocals cloningLocals, out UndertaleCodeLocals localsClone) =>
+        CloneCode(Patcher.data, cloneName, cloning, cloningLocals, out localsClone);
 
     public static UndertaleCode CloneCode(UndertaleData data, string cloneName, UndertaleCode cloning,
         UndertaleCodeLocals cloningLocals, out UndertaleCodeLocals localsClone) {
@@ -183,8 +205,12 @@ popz.v
         return codeClone;
     }
 
+    public static void HookCode(string code, string hook) => HookCode(Patcher.data, code, hook);
     public static void HookCode(UndertaleData data, string code, string hook) =>
         HookCode(data, data.Code.ByName(code), data.CodeLocals.ByName(code), hook);
+
+    public static void HookCode(UndertaleCode code, UndertaleCodeLocals locals, string hook) =>
+        HookCode(Patcher.data, code, locals, hook);
 
     public static void HookCode(UndertaleData data, UndertaleCode code, UndertaleCodeLocals locals, string hook) {
         string originalName = $"gmml_{code.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
@@ -192,6 +218,7 @@ popz.v
         ReplaceGmlSafe(code, hook.Replace("#orig#", $"{originalName}"), data);
     }
 
+    public static void HookScript(string script, string hook) => HookScript(Patcher.data, script, hook);
     public static void HookScript(UndertaleData data, string script, string hook) {
         UndertaleScript hookedScript = data.Scripts.ByName(script);
         UndertaleCode hookedCode = hookedScript.Code;
@@ -214,6 +241,7 @@ popz.v
 
     public delegate void AsmHook(UndertaleCode code, UndertaleCodeLocals locals);
 
+    public static void HookAsm(string name, AsmHook hook) => HookAsm(Patcher.data, name, hook);
     public static void HookAsm(UndertaleData data, string name, AsmHook hook) {
         if(_originalCodes.TryGetValue(name, out UndertaleCode? code))
             HookAsm(code, data.CodeLocals.ByName(code.Name.Content), hook);
@@ -226,6 +254,8 @@ popz.v
         code.UpdateAddresses();
     }
 
+    public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleCodeLocals locals) =>
+        GetLocalVars(Patcher.data, locals);
     public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleData data, UndertaleCodeLocals locals) =>
         locals.Locals.ToDictionary(local => local.Name.Content, local => data.Variables[(int)local.Index]);
 }
