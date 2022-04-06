@@ -13,7 +13,7 @@ namespace GmmlHooker;
 
 // ReSharper disable once ClassNeverInstantiated.Global
 public class Hooker : IGameMakerMod {
-    private static Dictionary<string, UndertaleCode> _originalCodes = new();
+    private static readonly Dictionary<string, UndertaleCode> originalCodes = new();
 
     public void Load(int audioGroup, ModMetadata currentMod, IEnumerable<ModMetadata> dependencies) {
         if(audioGroup != -1) return;
@@ -214,7 +214,7 @@ popz.v
 
     public static void HookCode(UndertaleData data, UndertaleCode code, UndertaleCodeLocals locals, string hook) {
         string originalName = $"gmml_{code.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
-        _originalCodes.TryAdd(code.Name.Content, CloneCode(data, originalName, code, locals, out _));
+        originalCodes.TryAdd(code.Name.Content, CloneCode(data, originalName, code, locals, out _));
         ReplaceGmlSafe(code, hook.Replace("#orig#", $"{originalName}"), data);
     }
 
@@ -229,7 +229,7 @@ popz.v
         UndertaleCode originalCodeClone =
             CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _);
 
-        _originalCodes.TryAdd(hookedCode.Name.Content, originalCodeClone);
+        originalCodes.TryAdd(hookedCode.Name.Content, originalCodeClone);
 
         // remove the function definition stuff
         originalCodeClone.Instructions.RemoveAt(0);
@@ -243,7 +243,7 @@ popz.v
 
     public static void HookAsm(string name, AsmHook hook) => HookAsm(Patcher.data, name, hook);
     public static void HookAsm(UndertaleData data, string name, AsmHook hook) {
-        if(_originalCodes.TryGetValue(name, out UndertaleCode? code))
+        if(originalCodes.TryGetValue(name, out UndertaleCode? code))
             HookAsm(code, data.CodeLocals.ByName(code.Name.Content), hook);
         else
             HookAsm(data.Code.ByName(name), data.CodeLocals.ByName(name), hook);
