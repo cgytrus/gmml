@@ -16,7 +16,7 @@ public class Hooker : IGameMakerMod {
     private static readonly Dictionary<string, UndertaleCode> originalCodes = new();
 
     public void Load(int audioGroup, ModMetadata currentMod, IEnumerable<ModMetadata> dependencies) {
-        if(audioGroup != -1) return;
+        if(audioGroup != 0) return;
         // TODO: define hooks in JSON? maybe?
 
         CreateSimpleScript("gmml_read_all_text", @"

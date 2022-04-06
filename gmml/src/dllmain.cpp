@@ -168,7 +168,7 @@ bool startClrHost() {
 
 unsigned char* modifyData(int audioGroup, unsigned char* orig, int* size) {
     if(settings.debug) {
-        if(audioGroup < 0) MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
+        if(audioGroup == 0) MessageBoxA(NULL, "Loading game data", "Info", MB_OK);
         else MessageBoxA(NULL, (std::string("Loading audio group ") + std::to_string(audioGroup)).c_str(), "Info", MB_OK);
     }
 
@@ -201,7 +201,7 @@ unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
     }
 
     if(strcmp(path, *g_pGameFileName) == 0) {
-        return modifyData(-1, LoadSave_ReadBundleFile_orig(path, size), modifySize);
+        return modifyData(0, LoadSave_ReadBundleFile_orig(path, size), modifySize);
     }
     else if(fsPath.extension() == ".dat" && fsPathStem.starts_with(audioGroupName)) {
         try {

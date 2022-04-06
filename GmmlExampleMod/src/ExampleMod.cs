@@ -18,7 +18,7 @@ public class ExampleMod : IGameMakerMod {
     }
 
     public void Load(int audioGroup, ModMetadata currentMod, IEnumerable<ModMetadata> dependencies) {
-        if(audioGroup != -1) return;
+        if(audioGroup != 0) return;
         Config config = GmmlConfig.Config.LoadPatcherConfig<Config>("gmmlExampleMod.json");
 
         Hooker.CreateScript("scr_test_script", @$"show_debug_message(""hi from test script"")

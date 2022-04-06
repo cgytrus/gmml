@@ -11,7 +11,7 @@ namespace GmmlConfig;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class Config : IGameMakerMod {
     public void Load(int audioGroup, ModMetadata currentMod, IEnumerable<ModMetadata> dependencies) {
-        if(audioGroup != -1) return;
+        if(audioGroup != 0) return;
         UndertaleString path = new(Patcher.configPath.Replace('\\', '/'));
 
         Hooker.CreateSimpleScript("gmml_config_get_path", @$"

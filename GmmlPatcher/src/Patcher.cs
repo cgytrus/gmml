@@ -201,7 +201,7 @@ public static class Patcher {
     }
 
     private static unsafe byte* LoadMods(int audioGroup, byte* original, int* size) {
-        Console.WriteLine(audioGroup < 0 ? "Modifying game data" : $"Modifying audio group {audioGroup}");
+        Console.WriteLine(audioGroup == 0 ? "Modifying game data" : $"Modifying audio group {audioGroup}");
 
         Console.WriteLine("Deserializing data");
 
@@ -441,7 +441,7 @@ public static class Patcher {
         Console.WriteLine($"Error! Failed when loading mod {id}:\n{exception}");
 
     private static string GetFileNameFromAudioGroup(int audioGroup) =>
-        audioGroup < 0 ? "data.win" : $"audiogroup{audioGroup}.dat";
+        audioGroup == 0 ? "data.win" : $"audiogroup{audioGroup}.dat";
 
     private static unsafe byte* UndertaleDataToBytes(UndertaleData data, int* size) {
         using MemoryStream stream = new(*size);
