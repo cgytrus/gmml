@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gmml", "gmml\gmml.vcxproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlPatcher", "GmmlPatcher\GmmlPatcher.csproj", "{9531F7D1-0A27-4D28-9702-4C39DF5B7B14}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlSampleMod", "GmmlSampleMod\GmmlSampleMod.csproj", "{F500FEC4-06A1-4AFF-A84F-E2E4EFE6497D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlExampleMod", "GmmlExampleMod\GmmlExampleMod.csproj", "{F500FEC4-06A1-4AFF-A84F-E2E4EFE6497D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{016B96EC-ECC2-44EC-A420-61B4E8464EAD}"
 	ProjectSection(SolutionItems) = preProject

@@ -1,8 +1,9 @@
 {
-    "id": "com.github.cgytrus.gmml.gmmlsamplemod",
-    "name": "GMML Sample Mod",
+    "id": "com.github.cgytrus.gmml.examplemod",
+    "name": "GMML Example Mod",
     "version": "1.0.0",
     "authors": [ "ConfiG" ],
+    "description": "General example mod for all GMML-supported games",
     "dependencies": [
         {
             "id": "com.github.cgytrus.gmml.hooker",
