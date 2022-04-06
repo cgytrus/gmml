@@ -21,6 +21,7 @@ public static class Patcher {
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
 
     public static UndertaleData data { get; private set; } = new();
+    // ReSharper disable once MemberCanBePrivate.Global UnusedAutoPropertyAccessor.Global
     public static IEnumerable<ModMetadata> mods { get; private set; } = Array.Empty<ModMetadata>();
 
     private static bool _errored;
@@ -209,9 +210,9 @@ public static class Patcher {
 
         Console.WriteLine("Loading mods");
 
-        _queuedMods ??= QueueMods();
-
         AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
+
+        _queuedMods ??= QueueMods();
 
         mods = _queuedMods.Select(mod => mod.metadata);
 
