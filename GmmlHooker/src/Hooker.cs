@@ -258,4 +258,67 @@ popz.v
         GetLocalVars(Patcher.data, locals);
     public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleData data, UndertaleCodeLocals locals) =>
         locals.Locals.ToDictionary(local => local.Name.Content, local => data.Variables[(int)local.Index]);
+
+    public static void AddSound(int currentAudioGroup, int audioGroup, string file, bool embed = true,
+        bool decodeOnLoad = true) => AddSound(Patcher.data, currentAudioGroup, audioGroup, file, embed, decodeOnLoad);
+    public static void AddSound(UndertaleData data, int currentAudioGroup, int audioGroup, string file,
+        bool embed = true, bool decodeOnLoad = true) {
+        if(currentAudioGroup == audioGroup)
+            data.EmbeddedAudio.Add(new UndertaleEmbeddedAudio {
+                Data = File.ReadAllBytes(file)
+            });
+
+        if(currentAudioGroup != 0)
+            return;
+
+        if(!TryGetAudioEntryFlags(file, embed, decodeOnLoad, out UndertaleSound.AudioEntryFlags flags))
+            Console.WriteLine($"Warning! Unsupported audio format ({file})");
+
+        AddSound(data, audioGroup, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file), flags);
+    }
+
+    private static bool TryGetAudioEntryFlags(string file, bool embed, bool decodeOnLoad,
+        out UndertaleSound.AudioEntryFlags flags) {
+        flags = UndertaleSound.AudioEntryFlags.Regular;
+        string extension = Path.GetExtension(file);
+        switch(extension) {
+            case ".ogg": {
+                if(embed) {
+                    flags |= UndertaleSound.AudioEntryFlags.IsCompressed;
+                    if(decodeOnLoad)
+                        flags |= UndertaleSound.AudioEntryFlags.IsEmbedded;
+                }
+                break;
+            }
+            case ".wav":
+                flags |= UndertaleSound.AudioEntryFlags.IsEmbedded;
+                break;
+            default:
+                return false;
+        }
+
+        return true;
+    }
+
+    private static void AddSound(UndertaleData data, int audioGroup, string name, string file,
+        UndertaleSound.AudioEntryFlags flags) {
+        // if the only flag is Regular, that means it's an external sound which doesn't have an ID
+        int audioId = flags == UndertaleSound.AudioEntryFlags.Regular ? -1 : GetAudioId(data, audioGroup);
+        data.Sounds.Add(new UndertaleSound {
+            Name = data.Strings.MakeString(name),
+            Flags = flags,
+            File = data.Strings.MakeString(file),
+            AudioID = audioId,
+            AudioGroup = data.AudioGroups[audioGroup]
+        });
+    }
+
+    private static int GetAudioId(UndertaleData data, int audioGroup) {
+        int audioId = -1;
+        foreach(UndertaleSound sound in data.Sounds)
+            if(sound.GroupID == audioGroup && sound.AudioID > audioId)
+                audioId = sound.AudioID;
+
+        return audioId + 1;
+    }
 }

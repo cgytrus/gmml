@@ -18,6 +18,10 @@ public class ExampleMod : IGameMakerMod {
     }
 
     public void Load(int audioGroup, ModData currentMod) {
+        string soundPath = Path.Combine(currentMod.path, "sou_example_sound.wav");
+        if(File.Exists(soundPath))
+            Hooker.AddSound(audioGroup, 1, soundPath);
+
         if(audioGroup != 0) return;
         Config config = GmmlConfig.Config.LoadPatcherConfig<Config>("gmmlExampleMod.json");
 
