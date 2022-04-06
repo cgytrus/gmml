@@ -3,6 +3,7 @@
     "name": "GMML Config",
     "version": "0.1.0",
     "authors": [ "ConfiG" ],
+    "description": "Provides an easy to use config API for both patch-time and runtime configuration",
     "dependencies": [
         {
             "id": "com.github.cgytrus.gmml.hooker",
