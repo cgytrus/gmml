@@ -20,7 +20,8 @@ public static class Patcher {
     private static readonly string cachePath = Path.Combine("gmml", "cache");
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
 
-    public static UndertaleData data { get; private set; } = new();
+    // suppress nullable warning because this will never be null when we actually need it
+    public static UndertaleData data { get; private set; } = null!;
     // ReSharper disable once MemberCanBePrivate.Global UnusedAutoPropertyAccessor.Global
     public static IEnumerable<ModData> mods { get; private set; } = Array.Empty<ModData>();
 
@@ -51,6 +52,9 @@ public static class Patcher {
             Console.WriteLine($"Error while loading mods! Loading vanilla\n{ex}");
         }
         finally {
+            // not sure if this does anything but gonna put it here just in case
+            data = null!;
+
             Console.WriteLine("Running full garbage collection");
             GC.Collect();
         }
