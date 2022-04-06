@@ -22,12 +22,12 @@ public static class Patcher {
 
     public static UndertaleData data { get; private set; } = new();
     // ReSharper disable once MemberCanBePrivate.Global UnusedAutoPropertyAccessor.Global
-    public static IEnumerable<ModMetadata> mods { get; private set; } = Array.Empty<ModMetadata>();
+    public static IEnumerable<ModData> mods { get; private set; } = Array.Empty<ModData>();
 
     private static bool _errored;
     private static Dictionary<string, string>? _hashes;
 
-    private static List<(ModMetadata metadata, IGameMakerMod mod, IEnumerable<ModMetadata> dependencies)>? _queuedMods;
+    private static List<(IGameMakerMod mod, ModData data)>? _queuedMods;
     private static readonly Dictionary<Type, IGameMakerMod> modInstances = new();
 
     [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -214,18 +214,18 @@ public static class Patcher {
 
         _queuedMods ??= QueueMods();
 
-        mods = _queuedMods.Select(mod => mod.metadata);
+        mods = _queuedMods.Select(mod => mod.data);
 
-        foreach((ModMetadata metadata, IGameMakerMod mod, IEnumerable<ModMetadata> dependencies) in _queuedMods) {
-            if(!TryLoadMod(mod, audioGroup, metadata, dependencies))
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+            if(!TryLoadMod(mod, audioGroup, modData))
                 continue;
-            Console.WriteLine($"Loaded mod {metadata.id}");
+            Console.WriteLine($"Loaded mod {modData.metadata.id}");
         }
 
-        foreach((ModMetadata metadata, IGameMakerMod mod, IEnumerable<ModMetadata> dependencies) in _queuedMods) {
-            if(!TryLateLoadMod(mod, audioGroup, metadata, dependencies))
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+            if(!TryLateLoadMod(mod, audioGroup, modData))
                 continue;
-            Console.WriteLine($"Late loaded mod {metadata.id}");
+            Console.WriteLine($"Late loaded mod {modData.metadata.id}");
         }
 
         AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
@@ -234,7 +234,7 @@ public static class Patcher {
         return UndertaleDataToBytes(data, size);
     }
 
-    private static List<(ModMetadata metadata, IGameMakerMod mod, IEnumerable<ModMetadata> dependencies)> QueueMods() {
+    private static List<(IGameMakerMod mod, ModData data)> QueueMods() {
         string whitelistPath = Path.Combine(modsPath, "whitelist.txt");
         string blacklistPath = Path.Combine(modsPath, "blacklist.txt");
 
@@ -255,12 +255,16 @@ public static class Patcher {
 
         SearchForMods(modsPath);
 
-        List<(ModMetadata metadata, IGameMakerMod mod, IEnumerable<ModMetadata> dependencies)> queuedMods = new();
+        List<(IGameMakerMod mod, ModData data)> queuedMods = new();
         foreach((string path, ModMetadata metadata) in availableMods) {
             if(!TryQueueMod(path, metadata, availableMods, out IGameMakerMod? mod,
                 out IEnumerable<ModMetadata> dependencies))
                 continue;
-            queuedMods.Add((metadata, mod, dependencies));
+            queuedMods.Add((mod, new ModData {
+                metadata = metadata,
+                path = path,
+                dependencies = dependencies
+            }));
         }
         return queuedMods;
     }
@@ -408,22 +412,20 @@ public static class Patcher {
         return true;
     }
 
-    private static bool TryLoadMod(IGameMakerMod mod, int audioGroup, ModMetadata metadata,
-        IEnumerable<ModMetadata> dependencies) {
-        try { mod.Load(audioGroup, metadata, dependencies); }
+    private static bool TryLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
+        try { mod.Load(audioGroup, modData); }
         catch(Exception ex) {
-            LogModLoadError(metadata.id, ex);
+            LogModLoadError(modData.metadata.id, ex);
             return false;
         }
 
         return true;
     }
 
-    private static bool TryLateLoadMod(IGameMakerMod mod, int audioGroup, ModMetadata metadata,
-        IEnumerable<ModMetadata> dependencies) {
-        try { mod.LateLoad(audioGroup, metadata, dependencies); }
+    private static bool TryLateLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
+        try { mod.LateLoad(audioGroup, modData); }
         catch(Exception ex) {
-            LogModLoadError(metadata.id, ex);
+            LogModLoadError(modData.metadata.id, ex);
             return false;
         }
 
