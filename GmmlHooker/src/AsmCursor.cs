@@ -64,9 +64,10 @@ public class AsmCursor {
 
     public void GotoFirst(Predicate<UndertaleInstruction> match) => index = _code.Instructions.FindIndex(match);
     public void GotoLast(Predicate<UndertaleInstruction> match) => index = _code.Instructions.FindLastIndex(match);
-    public void GotoNext(Predicate<UndertaleInstruction> match) => index = _code.Instructions.FindIndex(index, match);
+    public void GotoNext(Predicate<UndertaleInstruction> match) =>
+        index = _code.Instructions.FindIndex(index + 1, match);
     public void GotoPrev(Predicate<UndertaleInstruction> match) =>
-        index = _code.Instructions.FindLastIndex(0, index - 1, match);
+        index = _code.Instructions.FindLastIndex(index - 1, index - 2, match);
 
     private UndertaleInstruction Assemble(string source) {
         UndertaleInstruction instruction = Assembler.AssembleOne(source, _data.Functions, _data.Variables,
