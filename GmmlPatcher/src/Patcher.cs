@@ -41,10 +41,8 @@ public static class Patcher {
         try {
             if(TryLoadCache(audioGroup, original, size, out byte* modified, out string fileName, out MD5 hash))
                 return modified;
-            _hashes ??= new Dictionary<string, string>(1);
-            SaveHash(fileName, hash, _hashes);
             modified = LoadMods(audioGroup, original, size);
-            SaveCache(fileName, modified, *size);
+            SaveCache(fileName, hash, modified, *size);
             return modified;
         }
         catch(Exception ex) {
@@ -138,33 +136,26 @@ public static class Patcher {
         return true;
     }
 
-    private static void SaveHash(string fileName, HashAlgorithm hash, Dictionary<string, string> hashes) {
+    private static unsafe void SaveCache(string fileName, HashAlgorithm originalHash, byte* modified, int size) {
+        // already warned in TryLoadCache so we can just quietly return
+        if(originalHash.Hash is null)
+            return;
+
+        _hashes ??= new Dictionary<string, string>(1);
+
         try {
-            Console.WriteLine($"Saving {fileName} hash");
+            Console.WriteLine($"Caching {fileName}");
 
-            // already warned in TryLoadCache so we can just quietly return
-            if(hash.Hash is null)
-                return;
-
-            string hashString = BitConverter.ToString(hash.Hash).Replace("-", "").ToLower();
-            hashes[fileName] = hashString;
-            File.WriteAllText(hashesFilePath, JsonSerializer.Serialize(hashes));
-        }
-        catch(Exception ex) {
-            Console.WriteLine($"Warning! Failed to save {fileName} hash\n{ex}");
-        }
-    }
-
-    private static unsafe void SaveCache(string fileName, byte* modified, int size) {
-        try {
-            Console.WriteLine($"Saving {fileName} cache");
+            string hashString = BitConverter.ToString(originalHash.Hash).Replace("-", "").ToLower();
+            _hashes[fileName] = hashString;
+            File.WriteAllText(hashesFilePath, JsonSerializer.Serialize(_hashes));
 
             byte[] bytes = new byte[size];
             Marshal.Copy((IntPtr)modified, bytes, 0, size);
             File.WriteAllBytes(Path.Combine(cachePath, fileName), bytes);
         }
         catch(Exception ex) {
-            Console.WriteLine($"Warning! Failed to save {fileName} cache\n{ex}");
+            Console.WriteLine($"Warning! Failed to cache {fileName}\n{ex}");
         }
     }
 
