@@ -25,7 +25,7 @@ public class ExampleMod : IGameMakerMod {
         if(audioGroup != 0) return;
         Config config = GmmlConfig.Config.LoadPatcherConfig<Config>("gmmlExampleMod.json");
 
-        Hooker.CreateScript("scr_test_script", @$"show_debug_message(""hi from test script"")
+        Hooker.CreateFunction("scr_test_func", @$"show_debug_message(""hi from test func"")
 if argument1 == false {{
     return false
 }}

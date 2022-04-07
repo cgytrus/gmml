@@ -19,7 +19,7 @@ public class Hooker : IGameMakerMod {
         if(audioGroup != 0) return;
         // TODO: define hooks in JSON? maybe?
 
-        CreateSimpleScript("gmml_read_all_text", @"
+        CreateLegacyScript("gmml_read_all_text", @"
 var file_buffer = buffer_load(argument0);
 var text = buffer_read(file_buffer, buffer_string);
 buffer_delete(file_buffer);
@@ -76,10 +76,10 @@ return text
         return mainCode;
     }
 
-    public static UndertaleScript CreateSimpleScript(string name, string code, ushort argCount) =>
-        CreateSimpleScript(Patcher.data, name, code, argCount);
+    public static UndertaleScript CreateLegacyScript(string name, string code, ushort argCount) =>
+        CreateLegacyScript(Patcher.data, name, code, argCount);
 
-    public static UndertaleScript CreateSimpleScript(UndertaleData data, string name, string code, ushort argCount) {
+    public static UndertaleScript CreateLegacyScript(UndertaleData data, string name, string code, ushort argCount) {
         UndertaleString mainName = data.Strings.MakeString(name);
         UndertaleCode mainCode = CreateCode(data, mainName, out _);
         mainCode.ArgumentsCount = argCount;
@@ -95,13 +95,78 @@ return text
         return script;
     }
 
-    public static UndertaleScript CreateScript(string name, string code, ushort argCount) =>
-        CreateScript(Patcher.data, name, code, argCount);
+    public static UndertaleScript CreateFunction(string name, string code, ushort argCount) =>
+        CreateFunction(Patcher.data, name, code, argCount);
+    public static UndertaleScript CreateFunction(UndertaleData data, string name, string code, ushort argCount) {
+        UndertaleScript globalScript = CreateGlobalScript(data, name, "", 0, out UndertaleCodeLocals locals);
+        CreateInlineFunction(data, true, globalScript.Code, locals, name, code, argCount);
+        return globalScript;
+    }
 
-    public static UndertaleScript CreateScript(UndertaleData data, string name, string code, ushort argCount) {
-        UndertaleString mainName = data.Strings.MakeString(name);
-        UndertaleString scriptName = data.Strings.MakeString($"gml_Script_{name}", out int scriptNameIndex);
-        UndertaleString globalName = data.Strings.MakeString($"gml_GlobalScript_{name}");
+    public static UndertaleScript CreateGlobalScript(string name, string code, ushort argCount,
+        out UndertaleCodeLocals locals) =>
+        CreateGlobalScript(Patcher.data, name, code, argCount, out locals);
+    public static UndertaleScript CreateGlobalScript(UndertaleData data, string name, string code, ushort argCount,
+        out UndertaleCodeLocals locals) {
+        UndertaleString scriptName = data.Strings.MakeString(name);
+        UndertaleString codeName = data.Strings.MakeString($"gml_GlobalScript_{name}");
+
+        UndertaleCode globalCode = CreateCode(data, codeName, out locals);
+        globalCode.ArgumentsCount = argCount;
+
+        ReplaceGmlSafe(globalCode, code, data);
+
+        UndertaleScript script = new() {
+            Name = scriptName,
+            Code = globalCode
+        };
+        data.Scripts.Add(script);
+
+        data.GlobalInitScripts.Add(new UndertaleGlobalInit {
+            Code = globalCode
+        });
+
+        return script;
+    }
+
+    public static UndertaleScript CreateInlineFunction(UndertaleGlobalInit parent, string name,
+        string code, ushort argCount) => CreateInlineFunction(Patcher.data, parent, name, code, argCount);
+    public static UndertaleScript CreateInlineFunction(UndertaleData data, UndertaleGlobalInit parent, string name,
+        string code, ushort argCount) => CreateInlineFunction(data, true, parent.Code,
+        data.CodeLocals.ByName(parent.Code.Name.Content), name, code, argCount);
+
+    public static UndertaleScript CreateInlineFunction(UndertaleGlobalInit parent, UndertaleCodeLocals locals,
+        string name, string code, ushort argCount) =>
+            CreateInlineFunction(Patcher.data, parent, locals, name, code, argCount);
+    public static UndertaleScript CreateInlineFunction(UndertaleData data,
+        UndertaleGlobalInit parent, UndertaleCodeLocals locals, string name, string code, ushort argCount) =>
+            CreateInlineFunction(data, true, parent.Code, locals, name, code, argCount);
+
+    public static UndertaleScript CreateInlineFunction(string parent, string name,
+        string code, ushort argCount) => CreateInlineFunction(Patcher.data, parent, name, code, argCount);
+    public static UndertaleScript CreateInlineFunction(UndertaleData data, string parent, string name,
+        string code, ushort argCount) => CreateInlineFunction(data, data.Code.ByName(parent),
+        data.CodeLocals.ByName(parent), name, code, argCount);
+
+    public static UndertaleScript CreateInlineFunction(UndertaleCode parent, UndertaleCodeLocals parentLocals,
+        string name, string code, ushort argCount) =>
+            CreateInlineFunction(Patcher.data, parent, parentLocals, name, code, argCount);
+    public static UndertaleScript CreateInlineFunction(UndertaleData data,
+        UndertaleCode parent, UndertaleCodeLocals parentLocals,
+        string name, string code, ushort argCount) =>
+            CreateInlineFunction(data, false, parent, parentLocals, name, code, argCount);
+
+    private static UndertaleScript CreateInlineFunction(UndertaleData data, bool global,
+        UndertaleCode parent, UndertaleCodeLocals parentLocals, string name, string code, ushort argCount) {
+        UndertaleScript functionScript = CreateFunctionDefinition(data, global, parent, name, argCount);
+        PrependFunctionCode(data, name, code, parent, parentLocals, functionScript.Name.Content);
+        return functionScript;
+    }
+
+    private static UndertaleScript CreateFunctionDefinition(UndertaleData data, bool global, UndertaleCode parent,
+        string name, ushort argCount) {
+        UndertaleString scriptName = data.Strings.MakeString(
+            global ? $"gml_Script_{name}" : $"gml_Script_{name}_{parent.Name.Content}", out int scriptNameIndex);
 
         data.Variables.EnsureDefined(name, UndertaleInstruction.InstanceType.Self, false, data.Strings, data);
 
@@ -112,44 +177,37 @@ return text
         };
         data.Functions.Add(scriptFunction);
 
-        UndertaleCode globalCode = CreateCode(data, globalName, out UndertaleCodeLocals globalLocals);
-
         UndertaleCode scriptCode = new() {
             Name = scriptName,
             LocalsCount = 0,
             ArgumentsCount = argCount,
-            ParentEntry = globalCode
+            ParentEntry = parent
         };
-        globalCode.ChildEntries.Add(scriptCode);
-        data.Code.Add(scriptCode);
+        parent.ChildEntries.Add(scriptCode);
+        data.Code.Insert(data.Code.IndexOf(parent) + 1, scriptCode);
 
-        data.GlobalInitScripts.Add(new UndertaleGlobalInit {
-            Code = globalCode
-        });
-
-        ReplaceWithScriptDefinition(data, name, code, globalCode, globalLocals, scriptName.Content);
-
-        UndertaleScript script = new() {
-            Name = mainName,
-            Code = globalCode
-        };
-        data.Scripts.Add(script);
-
-        UndertaleScript intermediaryScript = new() {
+        UndertaleScript functionScript = new() {
             Name = scriptName,
             Code = scriptCode
         };
-        data.Scripts.Add(intermediaryScript);
+        data.Scripts.Add(functionScript);
 
-        return script;
+        return functionScript;
     }
 
-    public static void ReplaceWithScriptDefinition(string name, string gmlCode, UndertaleCode code,
+    public static void PrependFunctionCode(string name, string gmlCode, UndertaleCode code,
         UndertaleCodeLocals locals, string intermediaryName) =>
-        ReplaceWithScriptDefinition(Patcher.data, name, gmlCode, code, locals, intermediaryName);
+        PrependFunctionCode(Patcher.data, name, gmlCode, code, locals, intermediaryName);
 
-    private static void ReplaceWithScriptDefinition(UndertaleData data, string name, string gmlCode, UndertaleCode code,
-        UndertaleCodeLocals locals, string intermediaryName) {
+    private static void PrependFunctionCode(UndertaleData data, string name, string gmlCode,
+        UndertaleCode code, UndertaleCodeLocals locals, string functionName) {
+        UndertaleInstruction?[] childStarts = new UndertaleInstruction?[code.ChildEntries.Count];
+        for(int i = 0; i < code.ChildEntries.Count; i++) {
+            UndertaleCode child = code.ChildEntries[i];
+            childStarts[i] = child.Offset == 0 ? null : code.GetInstructionFromAddress(child.Offset / 4);
+        }
+
+        List<UndertaleInstruction> oldCode = new(code.Instructions);
         ReplaceGmlSafe(code, gmlCode, data);
         code.Replace(Assembler.Assemble(@$"
 b [func_def]
@@ -159,7 +217,7 @@ b [func_def]
 exit.i
 
 :[func_def]
-push.i {intermediaryName}
+push.i {functionName}
 conv.i.v
 pushi.e -1
 conv.i.v
@@ -170,14 +228,17 @@ pop.v.v [stacktop]self.{name}
 popz.v
 
 :[end]", data));
+        code.Append(oldCode);
+
+        for(int i = 0; i < code.ChildEntries.Count; i++) {
+            UndertaleInstruction? childStart = childStarts[i];
+            if(childStart is null) continue;
+            code.ChildEntries[i].Offset = childStart.Address * 4;
+        }
     }
 
-    public static UndertaleCode ReplaceWithScriptDefinition(string cloneName, UndertaleCode cloning,
-        UndertaleCodeLocals cloningLocals, out UndertaleCodeLocals localsClone) =>
-        CloneCode(Patcher.data, cloneName, cloning, cloningLocals, out localsClone);
-
-    public static UndertaleCode CloneCode(UndertaleData data, string cloneName, UndertaleCode cloning,
-        UndertaleCodeLocals cloningLocals, out UndertaleCodeLocals localsClone) {
+    private static UndertaleCode MoveCodeForHook(UndertaleData data, string cloneName, UndertaleCode cloning,
+        UndertaleCodeLocals cloningLocals) {
         UndertaleCode codeClone = new() {
             Name = data.Strings.MakeString(cloneName),
             LocalsCount = cloning.LocalsCount,
@@ -186,13 +247,22 @@ popz.v
             WeirdLocalFlag = cloning.WeirdLocalFlag
         };
         codeClone.Replace(cloning.Instructions);
-        data.Code.Add(codeClone);
+        data.Code.Insert(data.Code.IndexOf(cloning) + 1, codeClone);
         data.Scripts.Add(new UndertaleScript {
             Name = codeClone.Name,
             Code = codeClone
         });
 
-        localsClone = new UndertaleCodeLocals {
+        foreach(UndertaleCode childEntry in cloning.ChildEntries) {
+            childEntry.ParentEntry = codeClone;
+            codeClone.ChildEntries.Add(childEntry);
+        }
+
+        cloning.ChildEntries.Clear();
+        cloning.Instructions.Clear();
+        cloning.UpdateAddresses();
+
+        UndertaleCodeLocals localsClone = new() {
             Name = codeClone.Name
         };
         foreach(UndertaleCodeLocals.LocalVar localVar in cloningLocals.Locals)
@@ -200,6 +270,7 @@ popz.v
                 Name = localVar.Name,
                 Index = localVar.Index
             });
+        cloningLocals.Locals.Clear();
         data.CodeLocals.Add(localsClone);
 
         return codeClone;
@@ -214,29 +285,36 @@ popz.v
 
     public static void HookCode(UndertaleData data, UndertaleCode code, UndertaleCodeLocals locals, string hook) {
         string originalName = $"gmml_{code.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
-        originalCodes.TryAdd(code.Name.Content, CloneCode(data, originalName, code, locals, out _));
+        originalCodes.TryAdd(code.Name.Content, MoveCodeForHook(data, originalName, code, locals));
         ReplaceGmlSafe(code, hook.Replace("#orig#", $"{originalName}"), data);
     }
 
-    public static void HookScript(string script, string hook) => HookScript(Patcher.data, script, hook);
-    public static void HookScript(UndertaleData data, string script, string hook) {
-        UndertaleScript hookedScript = data.Scripts.ByName(script);
-        UndertaleCode hookedCode = hookedScript.Code;
+    public static void HookFunction(string function, string hook) => HookFunction(Patcher.data, function, hook);
+    public static void HookFunction(UndertaleData data, string function, string hook) {
+        string hookedFunctionName = $"gml_Script_{function}";
+        UndertaleCode hookedFunctionCode = data.Code.ByName(hookedFunctionName);
+        UndertaleCode hookedCode = hookedFunctionCode.ParentEntry;
         UndertaleCodeLocals hookedCodeLocals = data.CodeLocals.ByName(hookedCode.Name.Content);
 
-        string originalName = $"gmml_{hookedCode.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
+        string originalName = $"gmml_{hookedFunctionName}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
 
-        UndertaleCode originalCodeClone =
-            CloneCode(data, originalName, hookedCode, hookedCodeLocals, out _);
+        UndertaleScript originalFunctionScript =
+            CreateFunctionDefinition(data, true, hookedCode, originalName, hookedFunctionCode.ArgumentsCount);
 
-        originalCodes.TryAdd(hookedCode.Name.Content, originalCodeClone);
+        originalFunctionScript.Code.Offset = hookedFunctionCode.Offset;
+        hookedFunctionCode.Offset = 0;
 
-        // remove the function definition stuff
-        originalCodeClone.Instructions.RemoveAt(0);
-        originalCodeClone.Instructions.RemoveRange(originalCodeClone.Instructions.Count - 10, 10);
+        PrependFunctionCode(data, function, hook.Replace("#orig#", $"{originalFunctionScript.Name.Content}"),
+            hookedCode, hookedCodeLocals, hookedFunctionName);
 
-        ReplaceWithScriptDefinition(data, script, hook.Replace("#orig#", $"{originalName}"), hookedCode,
-            hookedCodeLocals, $"gml_Script_{script}");
+        HookAsm(hookedCode, hookedCodeLocals, (code, locals) => {
+            AsmCursor cursor = new(data, code, locals);
+            cursor.GotoNext(instruction => instruction.Address == originalFunctionScript.Code.Offset / 4);
+            cursor.GotoNext($"push.i {hookedFunctionName}");
+            cursor.Replace($"push.i {originalFunctionScript.Name.Content}");
+            cursor.index += 6;
+            cursor.Replace($"pop.v.v [stacktop]self.{originalName}");
+        });
     }
 
     public delegate void AsmHook(UndertaleCode code, UndertaleCodeLocals locals);
