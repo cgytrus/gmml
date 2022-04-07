@@ -14,11 +14,11 @@ namespace GmmlPatcher;
 
 // ReSharper disable once UnusedType.Global
 public static class Patcher {
-    public static readonly string configPath = Path.Combine("gmml", "config");
     private static readonly string patcherPath = Path.Combine("gmml", "patcher");
     private static readonly string modsPath = Path.Combine("gmml", "mods");
     private static readonly string cachePath = Path.Combine("gmml", "cache");
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
+    private static readonly string additionalCacheFilesFilePath = Path.Combine(cachePath, "additionalFiles.json");
 
     // suppress nullable warning because this will never be null when we actually need it
     public static UndertaleData data { get; private set; } = null!;
@@ -27,6 +27,7 @@ public static class Patcher {
 
     private static bool _errored;
     private static Dictionary<string, string>? _hashes;
+    private static Dictionary<int, HashSet<string>>? _additionalCacheFiles;
 
     private static List<(IGameMakerMod mod, ModData data)>? _queuedMods;
     private static readonly Dictionary<Type, IGameMakerMod> modInstances = new();
@@ -59,10 +60,27 @@ public static class Patcher {
         return original;
     }
 
+    public static void AddFileToCache(int audioGroup, string path) {
+        path = Path.GetRelativePath("./", path);
+
+        _additionalCacheFiles ??= new Dictionary<int, HashSet<string>>();
+
+        if(_additionalCacheFiles.TryGetValue(audioGroup, out HashSet<string>? paths)) {
+            paths.Add(path);
+            return;
+        }
+
+        _additionalCacheFiles[audioGroup] = new HashSet<string> { path };
+    }
+
     private static unsafe bool TryLoadCache(int audioGroup, byte* original, int* size, out byte* modified,
         out string fileName, out MD5 hash) {
         modified = original;
         fileName = GetFileNameFromAudioGroup(audioGroup);
+
+        if(File.Exists(additionalCacheFilesFilePath))
+            _additionalCacheFiles = JsonSerializer.Deserialize<Dictionary<int, HashSet<string>>>(
+                    File.ReadAllText(additionalCacheFilesFilePath));
 
         byte[] data = new byte[*size];
         Marshal.Copy((IntPtr)original, data, 0, data.Length);
@@ -153,6 +171,9 @@ public static class Patcher {
             byte[] bytes = new byte[size];
             Marshal.Copy((IntPtr)modified, bytes, 0, size);
             File.WriteAllBytes(Path.Combine(cachePath, fileName), bytes);
+
+            if(_additionalCacheFiles is not null)
+                File.WriteAllText(additionalCacheFilesFilePath, JsonSerializer.Serialize(_additionalCacheFiles));
         }
         catch(Exception ex) {
             Console.WriteLine($"Warning! Failed to cache {fileName}\n{ex}");
@@ -165,10 +186,12 @@ public static class Patcher {
         AppendDirectoryToHash(hash, patcherPath);
         AppendDirectoryToHash(hash, modsPath);
 
-        if(Directory.Exists(configPath))
-            AppendDirectoryToHash(hash, configPath);
-
         AppendFileToHash(hash, "version.dll");
+
+        if(_additionalCacheFiles is not null &&
+            _additionalCacheFiles.TryGetValue(audioGroup, out HashSet<string>? paths))
+            foreach(string path in paths.Where(File.Exists))
+                AppendFileToHash(hash, path);
 
         byte[] audioGroupBytes = BitConverter.GetBytes(audioGroup);
         hash.TransformBlock(audioGroupBytes, 0, audioGroupBytes.Length, audioGroupBytes, 0);

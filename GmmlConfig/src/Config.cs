@@ -10,12 +10,14 @@ namespace GmmlConfig;
 
 // ReSharper disable once ClassNeverInstantiated.Global
 public class Config : IGameMakerMod {
+    private static readonly string configPath = Path.Combine("gmml", "config");
+
     public void Load(int audioGroup, ModData currentMod) {
         if(audioGroup != 0) return;
-        UndertaleString configPath = new(Patcher.configPath.Replace('\\', '/'));
+        UndertaleString configPathString = new(configPath.Replace('\\', '/'));
 
         Hooker.CreateLegacyScript("gmml_config_get_path", @$"
-var directory = {configPath} + ""/""
+var directory = {configPathString} + ""/""
 if !directory_exists(directory) {{
     directory_create(directory);
 }}
@@ -48,17 +50,19 @@ return config
 ", 2);
     }
 
+    // ReSharper disable once MemberCanBePrivate.Global
     public static string GetPatcherConfigPath(string name) {
-        Directory.CreateDirectory(Patcher.configPath);
-        string path = Path.Combine(Patcher.configPath, Path.GetFileName(name));
+        Directory.CreateDirectory(configPath);
+        string path = Path.Combine(configPath, Path.GetFileName(name));
         return path;
     }
 
-    public static T LoadPatcherConfig<T>(string name) where T : new() {
+    public static T LoadPatcherConfig<T>(int audioGroup, string name) where T : new() {
         string path = GetPatcherConfigPath(name);
         T config = new();
         if(File.Exists(path)) config = JsonSerializer.Deserialize<T>(File.ReadAllText(path)) ?? config;
         else File.WriteAllText(path, JsonSerializer.Serialize(config));
+        Patcher.AddFileToCache(audioGroup, path);
         return config;
     }
 }
