@@ -318,7 +318,7 @@ popz.v
             cursor.GotoNext(instruction => instruction.Address == originalFunctionScript.Code.Offset / 4);
             cursor.GotoNext($"push.i {hookedFunctionName}");
             cursor.Replace($"push.i {originalFunctionScript.Name.Content}");
-            cursor.index += 6;
+            cursor.index += 7;
             cursor.Replace($"pop.v.v [stacktop]self.{originalName}");
         });
     }

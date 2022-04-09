@@ -39,6 +39,7 @@ public class AsmCursor {
     public void Emit(UndertaleInstruction instruction) {
         _code.Instructions.Insert(index, instruction);
         InstructionChanged();
+        index++;
     }
 
     public void Emit(string source) => Emit(Assemble(source));
@@ -90,6 +91,5 @@ public class AsmCursor {
         _code.UpdateAddresses();
         foreach((UndertaleInstruction? target, string? label) in _labelTargets)
             target.JumpOffset = (int)_labels[label].Address - (int)target.Address;
-        index++;
     }
 }
