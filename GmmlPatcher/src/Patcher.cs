@@ -235,6 +235,12 @@ public static class Patcher {
         mods = _queuedMods.Select(mod => mod.data);
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+            if(!TryEarlyLoadMod(mod, audioGroup, modData))
+                continue;
+            Console.WriteLine($"Early loaded mod {modData.metadata.id}");
+        }
+
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
             if(!TryLoadMod(mod, audioGroup, modData))
                 continue;
             Console.WriteLine($"Loaded mod {modData.metadata.id}");
@@ -424,6 +430,16 @@ public static class Patcher {
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
             mod = null;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryEarlyLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
+        try { mod.EarlyLoad(audioGroup, modData); }
+        catch(Exception ex) {
+            LogModLoadError(modData.metadata.id, ex);
             return false;
         }
 
