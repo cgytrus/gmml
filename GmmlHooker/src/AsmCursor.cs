@@ -71,7 +71,7 @@ public class AsmCursor {
         TrySetIndex(_code.Instructions.FindLastIndex(index - 1, index - 2, match));
 
     private bool TrySetIndex(int index) {
-        if(index < 0 && index >= _code.Instructions.Count)
+        if(index < 0 || index >= _code.Instructions.Count)
             return false;
         this.index = index;
         return true;
