@@ -388,7 +388,8 @@ popz.v
             Flags = flags,
             File = data.Strings.MakeString(file),
             AudioID = audioId,
-            AudioGroup = data.AudioGroups[audioGroup]
+            AudioGroup = data.AudioGroups[audioGroup],
+            GroupID = audioGroup
         };
         data.Sounds.Add(sound);
         return sound;
