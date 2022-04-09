@@ -341,7 +341,8 @@ popz.v
     public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleCodeLocals locals) =>
         GetLocalVars(Patcher.data, locals);
     public static Dictionary<string, UndertaleVariable> GetLocalVars(UndertaleData data, UndertaleCodeLocals locals) =>
-        locals.Locals.ToDictionary(local => local.Name.Content, local => data.Variables[(int)local.Index]);
+        locals.Locals.ToDictionary(local => local.Name.Content, local =>
+            data.Variables.First(variable => variable.VarID == (int)local.Index));
 
     private static readonly UndertaleSound blankSound = new();
     public static UndertaleSound AddSound(int currentAudioGroup, int audioGroup, string file, bool embed = true,
