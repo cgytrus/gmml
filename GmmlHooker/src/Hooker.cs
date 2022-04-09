@@ -80,7 +80,7 @@ return text
         CreateLegacyScript(Patcher.data, name, code, argCount);
 
     public static UndertaleScript CreateLegacyScript(UndertaleData data, string name, string code, ushort argCount) {
-        UndertaleString mainName = data.Strings.MakeString(name);
+        UndertaleString mainName = data.Strings.MakeString(name, out int nameIndex);
         UndertaleCode mainCode = CreateCode(data, mainName, out _);
         mainCode.ArgumentsCount = argCount;
 
@@ -91,6 +91,12 @@ return text
             Code = mainCode
         };
         data.Scripts.Add(script);
+
+        UndertaleFunction function = new() {
+            Name = mainName,
+            NameStringID = nameIndex
+        };
+        data.Functions.Add(function);
 
         return script;
     }
