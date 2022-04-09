@@ -237,19 +237,19 @@ public static class Patcher {
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
             if(!TryEarlyLoadMod(mod, audioGroup, modData))
                 continue;
-            Console.WriteLine($"Early loaded mod {modData.metadata.id}");
+            Console.WriteLine($"Early loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
             if(!TryLoadMod(mod, audioGroup, modData))
                 continue;
-            Console.WriteLine($"Loaded mod {modData.metadata.id}");
+            Console.WriteLine($"Loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
             if(!TryLateLoadMod(mod, audioGroup, modData))
                 continue;
-            Console.WriteLine($"Late loaded mod {modData.metadata.id}");
+            Console.WriteLine($"Late loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
