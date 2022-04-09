@@ -18,11 +18,15 @@ A mod loader for some GameMaker Studio 2 games ***not*** using YYC
    *Note: if you're using Rider, you can open the NuGet tab > Sources > Feeds and add a new feed*
 4. Clone GMML recursively `git clone https://github.com/cgytrus/gmml.git --recursive`
 5. Go to `<dotnet folder (usually C:/Program Files/dotnet)>/packs/Microsoft.NETCore.App.Hosy.win-x64/<latest 6.x.x>/runtimes/win-x64/native`
-6. Copy the files `coreclr_delegates.h`, `hostfxr.h`, `nethost.dll`, `nethost.h` and `nethost.lib` to `gmml/lib/nethost`
+6. Copy the files `coreclr_delegates.h`, `hostfxr.h` and `nethost.h` to `gmml/lib/nethost`
+7. Copy the files `nethost.dll` and `nethost.lib` to `gmml/lib/nethost/x64`
 
    (yes, i was too lazy to make it find them automatically)
-7. Build gmml `msbuild ./gmml/gmml.vcxproj` (in x64 Native Tools Command Prompt)
-8. Publish GmmlPatcher `dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`
+
+   ((P.S. i don't even think that's possible without it being a c# project lol))
+8. If you need an x86 build, do the same but replace `x64` with `x86` everywhere
+9. Build gmml `msbuild ./gmml/gmml.vcxproj` (in x64 Native Tools Command Prompt)
+10. Publish GmmlPatcher `dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`
 ### Install
 1. Copy the `version.dll` and `nethost.dll` from gmml build output to your game's root
 2. Copy the publish folder from GmmlPatcher publish output to `<game root>/gmml` and rename it to `patcher`

@@ -31,6 +31,12 @@
     <Filter Include="lib\minhook\src\hde">
       <UniqueIdentifier>{9ae3a3bb-839f-4f53-9c2c-0cd86fbb1d4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib\nethost\x64">
+      <UniqueIdentifier>{1bd566e2-202f-4293-9038-ae0ff0007e1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\nethost\x86">
+      <UniqueIdentifier>{7cb5ddd7-70cb-44c1-a0ae-48831801cd50}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\minhook\src\buffer.c">
@@ -97,18 +103,24 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\nethost\nethost.lib">
-      <Filter>lib\nethost</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="lib\nethost\nethost.dll">
-      <Filter>lib\nethost</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="res\version.def">
       <Filter>Resource files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="lib\nethost\x64\nethost.dll">
+      <Filter>lib\nethost\x64</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="lib\nethost\x86\nethost.dll">
+      <Filter>lib\nethost\x86</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\nethost\x86\nethost.lib">
+      <Filter>lib\nethost\x86</Filter>
+    </Library>
+    <Library Include="lib\nethost\x64\nethost.lib">
+      <Filter>lib\nethost\x64</Filter>
+    </Library>
   </ItemGroup>
 </Project>
