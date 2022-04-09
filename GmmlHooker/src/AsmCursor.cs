@@ -52,22 +52,29 @@ public class AsmCursor {
 
     public void DefineLabel(string name) => _labels.Add(name, GetCurrent());
 
-    public void GotoFirst(string match) => GotoFirst(Assemble(match));
-    public void GotoLast(string match) => GotoLast(Assemble(match));
-    public void GotoNext(string match) => GotoNext(Assemble(match));
-    public void GotoPrev(string match) => GotoPrev(Assemble(match));
+    public bool GotoFirst(string match) => GotoFirst(Assemble(match));
+    public bool GotoLast(string match) => GotoLast(Assemble(match));
+    public bool GotoNext(string match) => GotoNext(Assemble(match));
+    public bool GotoPrev(string match) => GotoPrev(Assemble(match));
 
-    public void GotoFirst(UndertaleInstruction match) => GotoFirst(instruction => instruction.Match(match));
-    public void GotoLast(UndertaleInstruction match) => GotoLast(instruction => instruction.Match(match));
-    public void GotoNext(UndertaleInstruction match) => GotoNext(instruction => instruction.Match(match));
-    public void GotoPrev(UndertaleInstruction match) => GotoPrev(instruction => instruction.Match(match));
+    public bool GotoFirst(UndertaleInstruction match) => GotoFirst(instruction => instruction.Match(match));
+    public bool GotoLast(UndertaleInstruction match) => GotoLast(instruction => instruction.Match(match));
+    public bool GotoNext(UndertaleInstruction match) => GotoNext(instruction => instruction.Match(match));
+    public bool GotoPrev(UndertaleInstruction match) => GotoPrev(instruction => instruction.Match(match));
 
-    public void GotoFirst(Predicate<UndertaleInstruction> match) => index = _code.Instructions.FindIndex(match);
-    public void GotoLast(Predicate<UndertaleInstruction> match) => index = _code.Instructions.FindLastIndex(match);
-    public void GotoNext(Predicate<UndertaleInstruction> match) =>
-        index = _code.Instructions.FindIndex(index + 1, match);
-    public void GotoPrev(Predicate<UndertaleInstruction> match) =>
-        index = _code.Instructions.FindLastIndex(index - 1, index - 2, match);
+    public bool GotoFirst(Predicate<UndertaleInstruction> match) => TrySetIndex(_code.Instructions.FindIndex(match));
+    public bool GotoLast(Predicate<UndertaleInstruction> match) => TrySetIndex(_code.Instructions.FindLastIndex(match));
+    public bool GotoNext(Predicate<UndertaleInstruction> match) =>
+        TrySetIndex(_code.Instructions.FindIndex(index + 1, match));
+    public bool GotoPrev(Predicate<UndertaleInstruction> match) =>
+        TrySetIndex(_code.Instructions.FindLastIndex(index - 1, index - 2, match));
+
+    private bool TrySetIndex(int index) {
+        if(index < 0 && index >= _code.Instructions.Count)
+            return false;
+        this.index = index;
+        return true;
+    }
 
     private UndertaleInstruction Assemble(string source) {
         UndertaleInstruction instruction = Assembler.AssembleOne(source, _data.Functions, _data.Variables,
