@@ -1,17 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x86;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Semver" Version="2.1.0" />
+    <PackageReference Include="UndertaleModLib" Version="1.0.0" />
+  </ItemGroup>
+
+  <Target Name="BuildNativeProjectWindows" AfterTargets="Build">
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-      <EnableDynamicLoading>true</EnableDynamicLoading>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <IsPackable>false</IsPackable>
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native</NetHostDir>
+      <NativeProjectPath>..\gmml</NativeProjectPath>
+      <NativeOutputPath>$(NativeProjectPath)\bin\$(Platform)\$(Configuration)</NativeOutputPath>
+      <FinalOutputPath>$(OutputPath)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
     </PropertyGroup>
 
+    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
+
     <ItemGroup>
-      <PackageReference Include="Semver" Version="2.1.0" />
-      <PackageReference Include="UndertaleModLib" Version="1.0.0" />
+      <GmmlOutput Include="$(NativeOutputPath)\*.dll;$(NativeOutputPath)\*.pdb;$(NativeOutputPath)\*.cfg" />
+      <PatcherOutput Include="$(OutputPath)\*" />
     </ItemGroup>
+
+    <Copy SourceFiles="@(GmmlOutput)" DestinationFolder="$(FinalOutputPath)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)\gmml\patcher" SkipUnchangedFiles="true" />
+    <MakeDir Directories="$(FinalOutputPath)\gmml\mods" />
+  </Target>
 
 </Project>
