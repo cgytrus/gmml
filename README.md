@@ -6,6 +6,12 @@ A mod loader for some GameMaker Studio 2 games ***not*** using YYC
 2. Download latest release (there are none yet lol, [compile it yourself](#Compilation))
 3. Unpack the downloaded archive into the game's folder
 
+## Usage
+1. Put your mods in `<game root>/gmml/mods`
+2. Put mods' IDs (you can get them from the mods' `manifest.json` file) or paths (prefixed with your system's directory separator)
+   in `mods/blacklist.txt` to ignore them
+3. Put mods' IDs in `mods/whitelist.txt` to enable the whitelist and only load those mods
+
 ## Compilation
 ### Prerequisites
 - Visual Studio 2022 (IDE or Build Tools, MSVC v143 and .NET 6 SDK)
@@ -39,9 +45,3 @@ The final structure would look something like this:
 +---version.dll
 \---...
 ```
-
-## Usage
-1. Put your mods in `<game root>/gmml/mods`
-2. Put mods' IDs (you can get them from the mods' `manifest.json` file) or paths (prefixed with your system's directory separator)
-   in `mods/blacklist.txt` to ignore them
-3. Put mods' IDs in `mods/whitelist.txt` to enable the whitelist and only load those mods
