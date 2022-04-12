@@ -23,7 +23,8 @@
       <FinalOutputPath>$(OutputPath)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
     </PropertyGroup>
 
-    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
+    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
 
     <ItemGroup>
       <GmmlOutput Include="$(NativeOutputPath)\*.dll;$(NativeOutputPath)\*.pdb;$(NativeOutputPath)\*.cfg" />
