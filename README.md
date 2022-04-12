@@ -1,5 +1,6 @@
 # GameMaker Mod Loader
-A mod loader for some GameMaker Studio 2 games ***not*** using YYC
+A mod loader for some GameMaker Studio 2 games ***not*** using YYC,
+based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 
 ## Installation
 1. Install [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.3-windows-x64-installer)
