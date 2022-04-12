@@ -25,9 +25,9 @@ Manage NuGet Packages for Solution > Settings (gear icon next to the "Package so
 
    *Note for Rider users: you can open the NuGet tab > Sources > Feeds and add a new feed*
 4. Clone GMML recursively (`git clone https://github.com/cgytrus/gmml.git --recursive`)
-5. Build GmmlPatcher (`dotnet build GmmlPatcher -c Release -r win-x64 --self-contained`)
+5. Publish GmmlPatcher (`dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`)
 ### Install
-Copy the contents of `<GmmlPatcher build output>/gmml-*-*-final` into the game's root
+Copy the contents of `<GmmlPatcher publish path>/gmml-*-*-final` into the game's root
 The final structure would look something like this:
 ```
 <game root>

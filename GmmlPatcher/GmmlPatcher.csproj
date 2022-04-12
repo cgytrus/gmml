@@ -15,12 +15,12 @@
     <PackageReference Include="UndertaleModLib" Version="1.0.0" />
   </ItemGroup>
 
-  <Target Name="BuildNativeProjectWindows" AfterTargets="Build">
+  <Target Name="BuildNativeProjectWindows" AfterTargets="Publish">
     <PropertyGroup>
       <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native</NetHostDir>
       <NativeProjectPath>..\gmml</NativeProjectPath>
       <NativeOutputPath>$(NativeProjectPath)\bin\$(Platform)\$(Configuration)</NativeOutputPath>
-      <FinalOutputPath>$(OutputPath)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
+      <FinalOutputPath>$(PublishDir)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
     </PropertyGroup>
 
     <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build"
@@ -28,7 +28,7 @@
 
     <ItemGroup>
       <GmmlOutput Include="$(NativeOutputPath)\*.dll;$(NativeOutputPath)\*.pdb;$(NativeOutputPath)\*.cfg" />
-      <PatcherOutput Include="$(OutputPath)\*" />
+      <PatcherOutput Include="$(PublishDir)\*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(GmmlOutput)" DestinationFolder="$(FinalOutputPath)" SkipUnchangedFiles="true" />
