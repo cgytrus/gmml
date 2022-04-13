@@ -7,7 +7,6 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Platforms>x86;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,19 +20,15 @@
   <Target Name="BuildNativeProjectWindows" AfterTargets="Publish">
     <PropertyGroup>
       <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native</NetHostDir>
-      <NativeProjectPath>..\gmml</NativeProjectPath>
-      <NativeOutputPath>$(NativeProjectPath)\bin\$(Platform)\$(Configuration)</NativeOutputPath>
-      <FinalOutputPath>$(PublishDir)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
+      <FinalOutputPath>$(PublishDir)\gmml-final</FinalOutputPath>
     </PropertyGroup>
 
-    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
+    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build"
+             Properties="FinalOutputPath=$(FinalOutputPath)\;NetHostDir=$(NetHostDir)\" />
 
     <ItemGroup>
-      <GmmlOutput Include="$(NativeOutputPath)\*.dll;$(NativeOutputPath)\*.pdb;$(NativeOutputPath)\*.cfg" />
       <PatcherOutput Include="$(PublishDir)\*" />
     </ItemGroup>
-
-    <Copy SourceFiles="@(GmmlOutput)" DestinationFolder="$(FinalOutputPath)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)\gmml\patcher" SkipUnchangedFiles="true" />
     <MakeDir Directories="$(FinalOutputPath)\gmml\mods" />
   </Target>

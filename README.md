@@ -27,7 +27,7 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
    *Note: if you're not using Visual Studio, you have to select the VS/VS Build Tools
 MSBuild installation in your IDE settings*
 ### Install
-Copy the contents of `<GmmlPatcher publish path>/gmml-*-*-final` into the game's root
+Copy the contents of `<GmmlPatcher publish path>/gmml-final` into the game's root
 
 The final structure would look something like this:
 ```
