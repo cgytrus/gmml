@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlHooker", "GmmlHooker\Gm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlConfig", "GmmlConfig\GmmlConfig.csproj", "{8C1D12B6-20BD-4B2A-9CED-F83EE95F7A69}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UndertaleModLib", "UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj", "{3F83079D-9B6F-4897-91BD-BB6106DD4D86}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -69,6 +71,14 @@ Global
 		{9531F7D1-0A27-4D28-9702-4C39DF5B7B14}.Release|x64.Build.0 = Release|x64
 		{9531F7D1-0A27-4D28-9702-4C39DF5B7B14}.Release|x86.ActiveCfg = Release|x86
 		{9531F7D1-0A27-4D28-9702-4C39DF5B7B14}.Release|x86.Build.0 = Release|x86
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Debug|x64.ActiveCfg = Debug|x64
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Debug|x64.Build.0 = Debug|x64
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Debug|x86.Build.0 = Debug|Any CPU
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Release|x64.ActiveCfg = Release|x64
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Release|x64.Build.0 = Release|x64
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Release|x86.ActiveCfg = Release|Any CPU
+		{3F83079D-9B6F-4897-91BD-BB6106DD4D86}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

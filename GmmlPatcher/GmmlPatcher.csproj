@@ -12,7 +12,10 @@
 
   <ItemGroup>
     <PackageReference Include="Semver" Version="2.1.0" />
-    <PackageReference Include="UndertaleModLib" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj" />
   </ItemGroup>
 
   <Target Name="BuildNativeProjectWindows" AfterTargets="Publish">
@@ -23,8 +26,7 @@
       <FinalOutputPath>$(PublishDir)\gmml-$(Configuration)-$(Platform)-final</FinalOutputPath>
     </PropertyGroup>
 
-    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build"
-             Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
+    <MSBuild Projects="$(NativeProjectPath)\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);OutputPath=$(NativeOutputPath)\;NetHostDir=$(NetHostDir)\" />
 
     <ItemGroup>
       <GmmlOutput Include="$(NativeOutputPath)\*.dll;$(NativeOutputPath)\*.pdb;$(NativeOutputPath)\*.cfg" />

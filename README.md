@@ -15,18 +15,17 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 
 ## Compilation
 ### Prerequisites
-- Visual Studio 2022 (IDE or Build Tools, MSVC v143 and .NET 6 SDK)
+- Visual Studio 2022 with MSVC v143 and .NET 6 SDK
+
+**or**
+- Any C# IDE that supports using VS Build Tools (both Rider and VSCode should work, though I didn't test VSC)
+- Visual Studio Build Tools 2022 with MSVC v143 and .NET 6 SDK
 ### Compile
-1. Clone UndertaleModTool (`git clone https://github.com/krzys-h/UndertaleModTool.git`)
-2. Publish UndertaleModLib (`dotnet publish UndertaleModLib -c Release -r win-x64 --self-contained`)
-3. Add the NuGet package to NuGet sources (`dotnet nuget add source <path to folder with the .nupkg file>`)
+1. Clone GMML recursively (`git clone https://github.com/cgytrus/gmml.git --recursive`)
+2. Publish GmmlPatcher (`dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`)
 
-   *Note for Visual Studio users: you can right click on the solution in the Solution Explorer tab >
-Manage NuGet Packages for Solution > Settings (gear icon next to the "Package source" dropdown) and add a new feed*
-
-   *Note for Rider users: you can open the NuGet tab > Sources > Feeds and add a new feed*
-4. Clone GMML recursively (`git clone https://github.com/cgytrus/gmml.git --recursive`)
-5. Publish GmmlPatcher (`dotnet publish GmmlPatcher -c Release -r win-x64 --self-contained`)
+   *Note: if you're not using Visual Studio, you have to select the VS/VS Build Tools
+MSBuild installation in your IDE settings*
 ### Install
 Copy the contents of `<GmmlPatcher publish path>/gmml-*-*-final` into the game's root
 The final structure would look something like this:

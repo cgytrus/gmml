@@ -1,3 +1,6 @@
 [submodule "gmml/lib/minhook"]
 	path = gmml/lib/minhook
 	url = https://github.com/TsudaKageyu/minhook
+[submodule "UndertaleModTool"]
+	path = UndertaleModTool
+	url = https://github.com/krzys-h/UndertaleModTool
