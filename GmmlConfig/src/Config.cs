@@ -4,6 +4,7 @@ using GmmlHooker;
 
 using GmmlPatcher;
 
+using UndertaleModLib;
 using UndertaleModLib.Models;
 
 namespace GmmlConfig;
@@ -12,11 +13,11 @@ namespace GmmlConfig;
 public class Config : IGameMakerMod {
     private static readonly string configPath = Path.Combine("gmml", "config");
 
-    public void Load(int audioGroup, ModData currentMod) {
+    public void Load(int audioGroup, UndertaleData data, ModData currentMod) {
         if(audioGroup != 0) return;
         UndertaleString configPathString = new(configPath.Replace('\\', '/'));
 
-        Hooker.CreateLegacyScript("gmml_config_get_path", @$"
+        data.CreateLegacyScript("gmml_config_get_path", @$"
 var directory = {configPathString} + ""/""
 if !directory_exists(directory) {{
     directory_create(directory);
@@ -24,11 +25,11 @@ if !directory_exists(directory) {{
 return directory
 ", 0);
 
-        Hooker.CreateLegacyScript("gmml_config_open_write", @"
+        data.CreateLegacyScript("gmml_config_open_write", @"
 return file_text_open_write(gmml_config_get_path() + argument0)
 ", 1);
 
-        Hooker.CreateLegacyScript("gmml_config_open_read", @"
+        data.CreateLegacyScript("gmml_config_open_read", @"
 var path = gmml_config_get_path() + argument0
 if !file_exists(path) {{
     gmml_config_save(argument0, argument1)
@@ -36,13 +37,13 @@ if !file_exists(path) {{
 return file_text_open_read(path)
 ", 2);
 
-        Hooker.CreateLegacyScript("gmml_config_save", @"
+        data.CreateLegacyScript("gmml_config_save", @"
 var config_file = gmml_config_open_write(argument0)
 file_text_write_string(config_file, json_stringify(argument1))
 file_text_close(config_file)
 ", 2);
 
-        Hooker.CreateLegacyScript("gmml_config_load", @"
+        data.CreateLegacyScript("gmml_config_load", @"
 var config_file = gmml_config_open_read(argument0, argument1)
 var config = json_parse(file_text_read_string(config_file))
 file_text_close(config_file)

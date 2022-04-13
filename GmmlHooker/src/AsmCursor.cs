@@ -1,5 +1,3 @@
-using GmmlPatcher;
-
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
@@ -29,10 +27,8 @@ public class AsmCursor {
     public AsmCursor(UndertaleData data, UndertaleCode code, UndertaleCodeLocals locals) {
         _data = data;
         _code = code;
-        _locals = Hooker.GetLocalVars(data, locals);
+        _locals = locals.GetLocalVars(data);
     }
-
-    public AsmCursor(UndertaleCode code, UndertaleCodeLocals locals) : this(Patcher.data, code, locals) { }
 
     public UndertaleInstruction GetCurrent() => _code.Instructions[index];
 

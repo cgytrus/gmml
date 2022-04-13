@@ -20,8 +20,6 @@ public static class Patcher {
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
     private static readonly string additionalCacheFilesFilePath = Path.Combine(cachePath, "additionalFiles.json");
 
-    // suppress nullable warning because this will never be null when we actually need it
-    public static UndertaleData data { get; private set; } = null!;
     // ReSharper disable once MemberCanBePrivate.Global UnusedAutoPropertyAccessor.Global
     public static IEnumerable<ModData> mods { get; private set; } = Array.Empty<ModData>();
 
@@ -39,6 +37,7 @@ public static class Patcher {
     [UnmanagedCallersOnly]
     public static unsafe byte* ModifyData(int audioGroup, byte* original, int* size) {
         if(_errored) return original;
+        int originalSize = *size;
         try {
             if(TryLoadCache(audioGroup, original, size, out byte* modified, out string fileName, out MD5 hash))
                 return modified;
@@ -51,12 +50,10 @@ public static class Patcher {
             Console.WriteLine($"Error while loading mods! Loading vanilla\n{ex}");
         }
         finally {
-            // not sure if this does anything but gonna put it here just in case
-            data = null!;
-
             Console.WriteLine("Running full garbage collection");
             GC.Collect();
         }
+        *size = originalSize;
         return original;
     }
 
@@ -224,38 +221,41 @@ public static class Patcher {
         Console.WriteLine("Deserializing data");
 
         using UnmanagedMemoryStream originalStream = new(original, *size);
-        data = UndertaleIO.Read(originalStream);
+        UndertaleData data = UndertaleIO.Read(originalStream);
 
+        LoadMods(audioGroup, data);
+
+        Console.WriteLine("Serializing data");
+        return UndertaleDataToBytes(data, size);
+    }
+
+    private static void LoadMods(int audioGroup, UndertaleData data) {
         Console.WriteLine("Loading mods");
 
         AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
 
         _queuedMods ??= QueueMods();
-
         mods = _queuedMods.Select(mod => mod.data);
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
-            if(!TryEarlyLoadMod(mod, audioGroup, modData))
+            if(!TryEarlyLoadMod(mod, audioGroup, data, modData))
                 continue;
             Console.WriteLine($"Early loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
-            if(!TryLoadMod(mod, audioGroup, modData))
+            if(!TryLoadMod(mod, audioGroup, data, modData))
                 continue;
             Console.WriteLine($"Loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
-            if(!TryLateLoadMod(mod, audioGroup, modData))
+            if(!TryLateLoadMod(mod, audioGroup, data, modData))
                 continue;
             Console.WriteLine($"Late loaded mod {modData.metadata.id} v{modData.metadata.version}");
         }
 
         AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
-
-        Console.WriteLine("Serializing data");
-        return UndertaleDataToBytes(data, size);
     }
 
     private static List<(IGameMakerMod mod, ModData data)> QueueMods() {
@@ -436,8 +436,8 @@ public static class Patcher {
         return true;
     }
 
-    private static bool TryEarlyLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
-        try { mod.EarlyLoad(audioGroup, modData); }
+    private static bool TryEarlyLoadMod(IGameMakerMod mod, int audioGroup, UndertaleData data, ModData modData) {
+        try { mod.EarlyLoad(audioGroup, data, modData); }
         catch(Exception ex) {
             LogModLoadError(modData.metadata.id, ex);
             return false;
@@ -446,8 +446,8 @@ public static class Patcher {
         return true;
     }
 
-    private static bool TryLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
-        try { mod.Load(audioGroup, modData); }
+    private static bool TryLoadMod(IGameMakerMod mod, int audioGroup, UndertaleData data, ModData modData) {
+        try { mod.Load(audioGroup, data, modData); }
         catch(Exception ex) {
             LogModLoadError(modData.metadata.id, ex);
             return false;
@@ -456,8 +456,8 @@ public static class Patcher {
         return true;
     }
 
-    private static bool TryLateLoadMod(IGameMakerMod mod, int audioGroup, ModData modData) {
-        try { mod.LateLoad(audioGroup, modData); }
+    private static bool TryLateLoadMod(IGameMakerMod mod, int audioGroup, UndertaleData data, ModData modData) {
+        try { mod.LateLoad(audioGroup, data, modData); }
         catch(Exception ex) {
             LogModLoadError(modData.metadata.id, ex);
             return false;

@@ -3,6 +3,9 @@ using UndertaleModLib.Models;
 
 namespace GmmlHooker;
 
+// ReSharper disable MemberCanBePrivate.Global MemberCanBeInternal UnusedMember.Global
+// ReSharper disable UnusedMethodReturnValue.Global OutParameterValueIsAlwaysDiscarded.Global
+
 public static class UndertaleInstructionExtensions {
     public static bool Match(this UndertaleInstruction left, UndertaleInstruction right) {
         return left.Kind == right.Kind && UndertaleInstruction.GetInstructionType(left.Kind) switch {
