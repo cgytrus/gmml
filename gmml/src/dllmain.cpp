@@ -220,6 +220,8 @@ bool loadModLoader() {
     loadSettings("gmml.cfg");
     if(settings.showConsole) AllocConsole();
 
+    if(settings.debug) MessageBoxA(NULL, "Loading", "Info", MB_OK);
+
     if(!findAddresses()) return false;
 
     if(MH_Initialize() != MH_OK) return false;
