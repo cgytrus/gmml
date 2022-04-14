@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeRuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</NativeRuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,11 +21,11 @@
   <!-- i'm never touching more advanced msbuild in my life again. -->
   <Target Name="BuildNativeProject" AfterTargets="Build">
     <PropertyGroup>
-      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\</NetHostDir>
+      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NativeRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NativeRuntimeIdentifier)\native\</NetHostDir>
       <FinalOutputPath>$([System.IO.Path]::GetFullPath('$(OutputPath)gmml-final\'))</FinalOutputPath>
       <NativePlatform>UnknownNativePlatform</NativePlatform>
-      <NativePlatform Condition="$(NETCoreSdkRuntimeIdentifier.EndsWith('-x86'))">Win32</NativePlatform>
-      <NativePlatform Condition="$(NETCoreSdkRuntimeIdentifier.EndsWith('-x64'))">x64</NativePlatform>
+      <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x86'))">Win32</NativePlatform>
+      <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x64'))">x64</NativePlatform>
     </PropertyGroup>
 
     <ItemGroup>
@@ -38,7 +39,7 @@
 
     <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
 
-    <MSBuild Projects="$(SolutionDir)gmml\gmml.vcxproj" Targets="Build"
+    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build"
              Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
   </Target>
 

@@ -22,10 +22,17 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 - Visual Studio Build Tools 2022 with MSVC v143 and .NET 6 SDK
 ### Compile
 1. Clone GMML recursively (`git clone https://github.com/cgytrus/gmml.git --recursive`)
-2. Build GmmlPatcher (`dotnet build GmmlPatcher -c Release -r win-x64`)
+2. Build GmmlPatcher (`msbuild GmmlPatcher -p:Configuration=Release -p:Platform=AnyCPU` from the Native Tools Command Prompt)
 
    *Note: if you're not using Visual Studio, you have to select the VS/VS Build Tools
 MSBuild installation in your IDE settings*
+#### Compile for different platform
+If you want to compile for a platform different than your current, use the command below in the Native Tools Command Prompt
+(currently supported platforms are `win-x64` and `win-x86`)
+
+```
+msbuild GmmlPatcher -p:Configuration=Release -p:Platform=AnyCPU -p:NativeRuntimeIdentifier=<platform>
+```
 ### Install
 Copy the contents of `<GmmlPatcher output path>/gmml-final` into the game's root
 
