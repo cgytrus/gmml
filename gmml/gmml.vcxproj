@@ -217,7 +217,7 @@
     </CopyFileToFolders>
     <None Include="res\version.def" />
   </ItemGroup>
-  <Target Name="CopyAfterPublish" AfterTargets="Build" Condition=" '$(FinalOutputPath)' != '' ">
+  <Target Name="CopyAfterBuild" AfterTargets="Build" Condition=" '$(FinalOutputPath)' != '' ">
     <ItemGroup>
       <GmmlOutput Include="$(OutDir)*.dll;$(OutDir)*.pdb;$(OutDir)*.cfg" />
     </ItemGroup>

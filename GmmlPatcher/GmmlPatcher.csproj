@@ -17,20 +17,29 @@
     <ProjectReference Include="..\UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildNativeProjectWindows" AfterTargets="Publish">
+  <!-- i'm never touching more advanced msbuild in my life again. -->
+  <Target Name="BuildNativeProject" AfterTargets="Build">
     <PropertyGroup>
-      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native</NetHostDir>
-      <FinalOutputPath>$(PublishDir)\gmml-final</FinalOutputPath>
+      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\</NetHostDir>
+      <FinalOutputPath>$([System.IO.Path]::GetFullPath('$(OutputPath)gmml-final\'))</FinalOutputPath>
+      <NativePlatform>UnknownNativePlatform</NativePlatform>
+      <NativePlatform Condition="$(NETCoreSdkRuntimeIdentifier.EndsWith('-x86'))">Win32</NativePlatform>
+      <NativePlatform Condition="$(NETCoreSdkRuntimeIdentifier.EndsWith('-x64'))">x64</NativePlatform>
     </PropertyGroup>
 
-    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build"
-             Properties="FinalOutputPath=$(FinalOutputPath)\;NetHostDir=$(NetHostDir)\" />
-
     <ItemGroup>
-      <PatcherOutput Include="$(PublishDir)\*" />
+      <PatcherOutput Include="$(OutputPath)*" />
+      <PatcherOutputRuntimes Include="$(OutputPath)runtimes\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)\gmml\patcher" SkipUnchangedFiles="true" />
-    <MakeDir Directories="$(FinalOutputPath)\gmml\mods" />
+    <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)gmml\patcher" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PatcherOutputRuntimes)"
+          DestinationFiles="$(FinalOutputPath)gmml\patcher\runtimes\%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="true" />
+
+    <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
+
+    <MSBuild Projects="$(SolutionDir)gmml\gmml.vcxproj" Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
   </Target>
 
 </Project>
