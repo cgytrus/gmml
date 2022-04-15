@@ -41,6 +41,13 @@
 
     <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build"
              Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
+
+    <ItemGroup>
+      <FinalOutput Include="$(FinalOutputPath)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FinalOutput)"
+          DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
   </Target>
 
 </Project>

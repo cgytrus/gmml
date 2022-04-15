@@ -1,21 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\GmmlConfig\GmmlConfig.csproj" />
-      <ProjectReference Include="..\GmmlHooker\GmmlHooker.csproj" Private="false" />
-      <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" Private="false" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GmmlConfig\GmmlConfig.csproj" />
+    <ProjectReference Include="..\GmmlHooker\GmmlHooker.csproj" Private="false" />
+    <ProjectReference Include="..\GmmlPatcher\GmmlPatcher.csproj" Private="false" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <None Update="metadata.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="HardlinkOutput" AfterTargets="Build">
     <ItemGroup>
-      <None Update="metadata.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+      <OutputFiles Include="$(OutputPath)**\*" />
     </ItemGroup>
+    <Copy SourceFiles="@(OutputFiles)"
+          DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
+  </Target>
 
 </Project>
