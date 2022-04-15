@@ -37,6 +37,16 @@ msbuild GmmlPatcher -p:Configuration=Release -p:Platform=AnyCPU -p:NativeRuntime
 ```
 ### Install
 Copy the contents of `<GmmlPatcher output path>/gmml-final` into the game's root
+**or**
+1. Create `_set_game_dir.bat` in `scripts/bat` and paste the following contents into it,
+replacing `<game dir>` with the path to your game:
+```
+set GAME_DIR=<game dir>
+```
+
+2. Run the `patcher.bat` and `mods.bat` or `mods_no_example.bat` scripts,
+they will symlink `GmmlPatcher`'s and the other projects' build outputs respectively
+to the correct locations in your game folder to allow for easier debugging
 
 The final structure would look something like this:
 ```

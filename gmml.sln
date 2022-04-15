@@ -23,6 +23,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GmmlConfig", "GmmlConfig\Gm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UndertaleModLib", "UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj", "{3F83079D-9B6F-4897-91BD-BB6106DD4D86}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{1D5C49E1-D62C-459F-8DFB-3FF5179D631E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "bat", "bat", "{20E115D3-30BE-42E9-8BEE-6671137F8A11}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\bat\_set_game_dir.bat = scripts\bat\_set_game_dir.bat
+		scripts\bat\mods.bat = scripts\bat\mods.bat
+		scripts\bat\patcher.bat = scripts\bat\patcher.bat
+		scripts\bat\mods_no_example.bat = scripts\bat\mods_no_example.bat
+		scripts\bat\clear_cache.bat = scripts\bat\clear_cache.bat
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|Any CPU = Release|Any CPU
@@ -57,5 +68,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {45807DFE-52A2-4B2A-9522-9EF0EE6EBDEB}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{20E115D3-30BE-42E9-8BEE-6671137F8A11} = {1D5C49E1-D62C-459F-8DFB-3FF5179D631E}
 	EndGlobalSection
 EndGlobal
