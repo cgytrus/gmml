@@ -181,6 +181,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\gmml.h" />
+    <ClInclude Include="include\gmrunner.h" />
     <ClInclude Include="include\proxy.h" />
     <ClInclude Include="include\sigscan.h" />
     <ClInclude Include="lib\minhook\include\MinHook.h" />

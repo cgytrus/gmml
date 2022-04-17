@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __CORECLR_DELEGATES_H__
-#define __CORECLR_DELEGATES_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -43,5 +42,3 @@ typedef int (CORECLR_DELEGATE_CALLTYPE *get_function_pointer_fn)(
     void         *load_context       /* Extensibility parameter (currently unused and must be 0) */,
     void         *reserved           /* Extensibility parameter (currently unused and must be 0) */,
     /*out*/ void **delegate          /* Pointer where to store the function pointer result */);
-
-#endif // __CORECLR_DELEGATES_H__

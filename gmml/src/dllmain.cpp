@@ -73,6 +73,22 @@ uintptr_t mmFreeAddress = 0x0;
 uintptr_t p_gGameFileNameAddress = 0x0;
 uintptr_t LoadSave_ReadBundleFileAddress = 0x0;
 
+uintptr_t InitGMLFunctionsAddress = 0x0;
+uintptr_t Function_AddAddress = 0x0;
+uintptr_t YYErrorAddress = 0x0;
+uintptr_t YYGetBoolAddress = 0x0;
+uintptr_t YYGetFloatAddress = 0x0;
+uintptr_t YYGetInt32Address = 0x0;
+uintptr_t YYGetInt64Address = 0x0;
+uintptr_t YYGetPtrAddress = 0x0;
+uintptr_t YYGetRealAddress = 0x0;
+uintptr_t YYGetStringAddress = 0x0;
+uintptr_t YYGetUint32Address = 0x0;
+uintptr_t YYCreateStringAddress = 0x0;
+uintptr_t ARRAY_RefAllocAddress = 0x0;
+uintptr_t SET_RValue_ArrayAddress = 0x0;
+uintptr_t GET_RValueAddress = 0x0;
+
 #include <Psapi.h>
 #include <processthreadsapi.h>
 
@@ -83,6 +99,7 @@ bool findAddresses() {
 
 #define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
 
+    // somebody please save my code from this monstrosity
     mmAllocAddress = find("40 53 56 57 48 81 ec 50 04 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 41 ?? ?? ?? 48 8b ?? 48 85 ?? 75 ?? 33 c0 e9 ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d8 48 85 c0");
 
     mmFreeAddress = find("48 85 c9 0f 84 ?? ?? ?? ?? 53 48 83 ec 30 48 8b d9 48 8b ?? ?? ?? ?? ?? 48 85 c9 75 ?? b9 08 00 00 00 e8 ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? 48 8b c8 e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ??");
@@ -99,12 +116,45 @@ bool findAddresses() {
 
     LoadSave_ReadBundleFileAddress = find("40 53 48 81 ec 30 08 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 48 8b da 4c 8b c1 ba 00 08 00 00 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d3 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? ?? 48 33 cc e8 ?? ?? ?? ?? 48 81 c4 30 08 00 00 5b c3");
 
+    // TODO: use sigscanning
+    // current addresses are for 2022.3.0.497 and probably only work on Will you Snail
+    InitGMLFunctionsAddress = base + 0x1e3400;
+    Function_AddAddress = base + 0x19f960;
+    YYErrorAddress = base + 0x1bc4d0;
+    YYGetBoolAddress = base + 0x1a3a10;
+    YYGetFloatAddress = base + 0x1a3b00;
+    YYGetInt32Address = base + 0x1a3c60;
+    YYGetInt64Address = base + 0x1a3d70;
+    YYGetPtrAddress = base + 0x1a3e90;
+    YYGetRealAddress = base + 0x1a3f70;
+    YYGetStringAddress = base + 0x1a40a0;
+    YYGetUint32Address = base + 0x1a4270;
+    YYCreateStringAddress = base + 0x1bc450;
+    ARRAY_RefAllocAddress = base + 0x1a02b0;
+    SET_RValue_ArrayAddress = base + 0x1a24a0;
+    GET_RValueAddress = base + 0x1a0fc0;
+
 #undef find
 
     return mmAllocAddress != 0x0 &&
         mmFreeAddress != 0x0 &&
         p_gGameFileNameAddressTemp != 0x0 &&
-        LoadSave_ReadBundleFileAddress != 0x0;
+        LoadSave_ReadBundleFileAddress != 0x0 &&
+        InitGMLFunctionsAddress != 0x0 &&
+        Function_AddAddress != 0x0 &&
+        YYErrorAddress != 0x0 &&
+        YYGetBoolAddress != 0x0 &&
+        YYGetFloatAddress != 0x0 &&
+        YYGetInt32Address != 0x0 &&
+        YYGetInt64Address != 0x0 &&
+        YYGetPtrAddress != 0x0 &&
+        YYGetRealAddress != 0x0 &&
+        YYGetStringAddress != 0x0 &&
+        YYGetUint32Address != 0x0 &&
+        YYCreateStringAddress != 0x0 &&
+        ARRAY_RefAllocAddress != 0x0 &&
+        SET_RValue_ArrayAddress != 0x0 &&
+        GET_RValueAddress != 0x0;
 }
 
 void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool unk3) {
@@ -113,6 +163,51 @@ void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool u
 
 static void __cdecl mmFree(void const* block) {
     ((void (__cdecl*)(void const*))mmFreeAddress)(block);
+}
+
+#include "../include/gmrunner.h"
+void __cdecl Function_Add(char const* name, GML_Call function, int argCount, bool unk) {
+    ((Function_AddType*)Function_AddAddress)(name, function, argCount, unk);
+}
+void __cdecl YYError(char* error) {
+    ((void (__cdecl*)(char*, ...))YYErrorAddress)(error);
+}
+
+bool __cdecl YYGetBool(RValue* arg, int argindex) {
+    return ((bool (__cdecl*)(RValue*, int))YYGetBoolAddress)(arg, argindex);
+}
+float_t __cdecl YYGetFloat(RValue* arg, int argindex) {
+    return ((float_t (__cdecl*)(RValue*, int))YYGetFloatAddress)(arg, argindex);
+}
+int32_t __cdecl YYGetInt32(RValue* arg, int argindex) {
+    return ((int32_t (__cdecl*)(RValue*, int))YYGetInt32Address)(arg, argindex);
+}
+int64_t __cdecl YYGetInt64(RValue* arg, int argindex) {
+    return ((int64_t (__cdecl*)(RValue*, int))YYGetInt64Address)(arg, argindex);
+}
+void* __cdecl YYGetPtr(RValue* arg, int argindex) {
+    return ((void* (__cdecl*)(RValue*, int))YYGetPtrAddress)(arg, argindex);
+}
+double_t __cdecl YYGetReal(RValue* arg, int argindex) {
+    return ((double (__cdecl*)(RValue*, int))YYGetRealAddress)(arg, argindex);
+}
+char* __cdecl YYGetString(RValue* arg, int argindex) {
+    return ((char* (__cdecl*)(RValue*, int))YYGetStringAddress)(arg, argindex);
+}
+uint32_t __cdecl YYGetUint32(RValue* arg, int argindex) {
+    return ((uint32_t (__cdecl*)(RValue*, int))YYGetUint32Address)(arg, argindex);
+}
+void __cdecl YYCreateString(RValue* value, char* str) {
+    ((void (__cdecl*)(RValue*, char*))YYCreateStringAddress)(value, str);
+}
+RefDynamicArrayOfRValue* __cdecl ARRAY_RefAlloc() {
+    return ((RefDynamicArrayOfRValue* (__cdecl*)())ARRAY_RefAllocAddress)();
+}
+void __cdecl SET_RValue_Array(RValue* arr, RValue* value, YYObjectBase* unk, int index) {
+    ((void (__cdecl*)(RValue*, RValue*, YYObjectBase*, int))SET_RValue_ArrayAddress)(arr, value, unk, index);
+}
+bool __cdecl GET_RValue(RValue* value, RValue* arr, YYObjectBase* unk, int index, bool unk1, bool unk2) {
+    return ((bool (__cdecl*)(RValue*, RValue*, YYObjectBase*, int, bool, bool))GET_RValueAddress)(value, arr, unk, index, unk1, unk2);
 }
 
 using string_t = std::basic_string<char_t>;
@@ -128,7 +223,8 @@ namespace {
     load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
 
-unsigned char* (__stdcall* modifyDataManaged)(int, unsigned char*, int*);
+unsigned char* (CORECLR_DELEGATE_CALLTYPE* modifyDataManaged)(int, unsigned char*, int*);
+void (CORECLR_DELEGATE_CALLTYPE* InitGMLFunctionsManaged)();
 bool startClrHost() {
     if(!load_hostfxr()) {
         MessageBoxA(NULL, "Error when loading hostfxr", NULL, MB_OK);
@@ -145,18 +241,27 @@ bool startClrHost() {
 
     const string_t dotnetlib_path = TEXT("gmml\\patcher\\GmmlPatcher.dll");
 
-    // the macros from coreclr_delegates.h don't work for some reason
-    // please submit a PR if you manage to fix it
-    // __stdcall here is CORECLR_DELEGATE_CALLTYPE
     int rc = load_assembly_and_get_function_pointer(
         dotnetlib_path.c_str(),
         TEXT("GmmlPatcher.Patcher, GmmlPatcher"), // type
         TEXT("ModifyData"), // method
-        (const char_t*)-1, // UNMANAGEDCALLERSONLY_METHOD
+        UNMANAGEDCALLERSONLY_METHOD,
         nullptr,
         (void**)&modifyDataManaged);
     if(rc != 0 || modifyDataManaged == nullptr) {
-        MessageBoxA(NULL, "Error when loading managed assembly", NULL, MB_OK);
+        MessageBoxA(NULL, "Error when getting GmmlPatcher.Patcher.ModifyData", NULL, MB_OK);
+        return false;
+    }
+
+    rc = load_assembly_and_get_function_pointer(
+        dotnetlib_path.c_str(),
+        TEXT("GmmlPatcher.Interop, GmmlPatcher"), // type
+        TEXT("InitGmlFunctions"), // method
+        UNMANAGEDCALLERSONLY_METHOD,
+        nullptr,
+        (void**)&InitGMLFunctionsManaged);
+    if(rc != 0 || InitGMLFunctionsManaged == nullptr) {
+        MessageBoxA(NULL, "Error when getting GmmlPatcher.Interop.InitGmlFunctions", NULL, MB_OK);
         return false;
     }
 
@@ -176,6 +281,7 @@ unsigned char* modifyData(int audioGroup, unsigned char* orig, int* size) {
         return orig;
 
 #pragma warning(push)
+// startClrHost guarantees not null
 #pragma warning(disable : 6011)
     auto bytes = modifyDataManaged(audioGroup, orig, size);
 #pragma warning(pop)
@@ -214,6 +320,18 @@ unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
     return LoadSave_ReadBundleFile_orig(path, size);
 }
 
+void (__cdecl* InitGMLFunctions_orig)();
+void __cdecl InitGMLFunctions_hook() {
+    if(InitGMLFunctionsManaged != nullptr || startClrHost())
+#pragma warning(push)
+// startClrHost guarantees not null
+#pragma warning(disable : 6011)
+        InitGMLFunctionsManaged();
+#pragma warning(pop)
+
+    InitGMLFunctions_orig();
+}
+
 #pragma warning(push)
 #pragma warning(disable : 26812)
 bool loadModLoader() {
@@ -225,9 +343,15 @@ bool loadModLoader() {
     if(!findAddresses()) return false;
 
     if(MH_Initialize() != MH_OK) return false;
+
     if(MH_CreateHook(reinterpret_cast<void*>(LoadSave_ReadBundleFileAddress), LoadSave_ReadBundleFile_hook,
         reinterpret_cast<void**>(&LoadSave_ReadBundleFile_orig)) != MH_OK)
         return false;
+
+    if (MH_CreateHook(reinterpret_cast<void*>(InitGMLFunctionsAddress), InitGMLFunctions_hook,
+        reinterpret_cast<void**>(&InitGMLFunctions_orig)) != MH_OK)
+        return false;
+
     if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK) return false;
 
     return true;

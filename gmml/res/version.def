@@ -18,3 +18,17 @@ EXPORTS
     VerQueryValueA = _VerQueryValueA
     VerQueryValueW = _VerQueryValueW
     mmAlloc
+    Function_Add
+    YYError
+    YYGetBool
+    YYGetFloat
+    YYGetInt32
+    YYGetInt64
+    YYGetPtr
+    YYGetReal
+    YYGetString
+    YYGetUint32
+    YYCreateString
+    ARRAY_RefAlloc
+    SET_RValue_Array
+    GET_RValue

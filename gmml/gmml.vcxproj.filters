@@ -95,6 +95,9 @@
     <ClInclude Include="include\sigscan.h">
       <Filter>Header files</Filter>
     </ClInclude>
+    <ClInclude Include="include\gmrunner.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\version.def">

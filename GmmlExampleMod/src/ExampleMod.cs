@@ -32,6 +32,26 @@ if argument1 == false {{
 }}
 show_debug_message(argument0)
 show_debug_message({new UndertaleString(config.logText)})
+
+show_debug_message(interop_test(""hello from c#!!""))
+
+var arr = array_create(2)
+array_set(arr, 0, ""hello from c# 2: electric boogaloo"")
+array_set(arr, 1, ""hello from c# 3!!"")
+interop_test_1(arr)
 return true", 2);
+    }
+
+    [GmlInterop("interop_test")]
+    public static string InteropTest(ref Interop.CInstance self, ref Interop.CInstance other, string text) {
+        Console.WriteLine(text);
+        return "hello from gml!!";
+    }
+
+    [GmlInterop("interop_test_1")]
+    // ReSharper disable once ParameterTypeCanBeEnumerable.Global
+    public static void InteropTest1(ref Interop.CInstance self, ref Interop.CInstance other, object[] texts) {
+        foreach(string text in texts)
+            Console.WriteLine(text);
     }
 }

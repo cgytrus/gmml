@@ -33,21 +33,16 @@
       <PatcherOutputRuntimes Include="$(OutputPath)runtimes\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)gmml\patcher" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(PatcherOutputRuntimes)"
-          DestinationFiles="$(FinalOutputPath)gmml\patcher\runtimes\%(RecursiveDir)%(Filename)%(Extension)"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PatcherOutputRuntimes)" DestinationFiles="$(FinalOutputPath)gmml\patcher\runtimes\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" />
 
     <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
 
-    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build"
-             Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
+    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
 
     <ItemGroup>
       <FinalOutput Include="$(FinalOutputPath)**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(FinalOutput)"
-          DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)"
-          SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
+    <Copy SourceFiles="@(FinalOutput)" DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
   </Target>
 
 </Project>

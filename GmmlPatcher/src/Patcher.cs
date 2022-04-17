@@ -20,9 +20,10 @@ public static class Patcher {
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
     private static readonly string additionalCacheFilesFilePath = Path.Combine(cachePath, "additionalFiles.json");
 
-    // ReSharper disable once MemberCanBePrivate.Global UnusedAutoPropertyAccessor.Global
+    // ReSharper disable once MemberCanBeInternal UnusedAutoPropertyAccessor.Global
     public static IEnumerable<ModData> mods { get; private set; } = Array.Empty<ModData>();
 
+    private static bool _loadedAtLeastOnce;
     private static bool _errored;
     private static Dictionary<string, string>? _hashes;
     private static Dictionary<int, HashSet<string>>? _additionalCacheFiles;
@@ -39,6 +40,10 @@ public static class Patcher {
         if(_errored) return original;
         int originalSize = *size;
         try {
+            if(!_loadedAtLeastOnce) AppDomain.CurrentDomain.AssemblyResolve += ResolveModAssemblies;
+            _loadedAtLeastOnce = true;
+
+            QueueAndExposeMods();
             if(TryLoadCache(audioGroup, original, size, out byte* modified, out string fileName, out MD5 hash))
                 return modified;
             modified = LoadMods(audioGroup, original, size);
@@ -232,30 +237,19 @@ public static class Patcher {
     private static void LoadMods(int audioGroup, UndertaleData data) {
         Console.WriteLine("Loading mods");
 
-        AppDomain.CurrentDomain.AssemblyResolve += TempResolveModAssemblies;
+        QueueAndExposeMods();
 
-        _queuedMods ??= QueueMods();
-        mods = _queuedMods.Select(mod => mod.data);
-
-        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods)
             if(!TryEarlyLoadMod(mod, audioGroup, data, modData))
-                continue;
-            Console.WriteLine($"Early loaded mod {modData.metadata.id} v{modData.metadata.version}");
-        }
+                Console.WriteLine($"Failed to early load mod {modData.metadata.id} v{modData.metadata.version}");
 
-        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods)
             if(!TryLoadMod(mod, audioGroup, data, modData))
-                continue;
-            Console.WriteLine($"Loaded mod {modData.metadata.id} v{modData.metadata.version}");
-        }
+                Console.WriteLine($"Failed to load mod {modData.metadata.id} v{modData.metadata.version}");
 
-        foreach((IGameMakerMod mod, ModData modData) in _queuedMods) {
+        foreach((IGameMakerMod mod, ModData modData) in _queuedMods)
             if(!TryLateLoadMod(mod, audioGroup, data, modData))
-                continue;
-            Console.WriteLine($"Late loaded mod {modData.metadata.id} v{modData.metadata.version}");
-        }
-
-        AppDomain.CurrentDomain.AssemblyResolve -= TempResolveModAssemblies;
+                Console.WriteLine($"Failed to late load mod {modData.metadata.id} v{modData.metadata.version}");
     }
 
     private static List<(IGameMakerMod mod, ModData data)> QueueMods() {
@@ -281,16 +275,27 @@ public static class Patcher {
 
         List<(IGameMakerMod mod, ModData data)> queuedMods = new();
         foreach((string path, ModMetadata metadata) in availableMods) {
-            if(!TryQueueMod(path, metadata, availableMods, out IGameMakerMod? mod,
+            if(!TryQueueMod(path, metadata, availableMods, out IGameMakerMod? mod, out Type? type,
                 out IEnumerable<ModMetadata> dependencies))
                 continue;
             queuedMods.Add((mod, new ModData {
                 metadata = metadata,
                 path = path,
-                dependencies = dependencies
+                dependencies = dependencies,
+                type = type
             }));
+            Console.WriteLine($"Queued mod {metadata.id} v{metadata.version}");
         }
         return queuedMods;
+    }
+
+    [MemberNotNull(nameof(_queuedMods))]
+    private static void QueueAndExposeMods() {
+        if(_queuedMods is not null)
+            return;
+        Console.WriteLine("Queuing mods");
+        _queuedMods = QueueMods();
+        mods = _queuedMods.Select(mod => mod.data);
     }
 
     private static bool TryGetModMetadata(string path, ImmutableHashSet<string> blacklist,
@@ -368,12 +373,14 @@ public static class Patcher {
 
     // ReSharper disable once CognitiveComplexity
     private static bool TryQueueMod(string path, ModMetadata metadata, IEnumerable<(string, ModMetadata)> availableMods,
-        [NotNullWhen(true)] out IGameMakerMod? mod, out IEnumerable<ModMetadata> availableDependencies) {
+        [NotNullWhen(true)] out IGameMakerMod? mod, [NotNullWhen(true)] out Type? type,
+        out IEnumerable<ModMetadata> availableDependencies) {
+        type = null;
         mod = null;
 
         availableDependencies = GetAvailableDependencies(availableMods, metadata.dependencies, out bool allAvailable);
         if(allAvailable)
-            return TryPrepareLoadMod(path, metadata, out mod);
+            return TryPrepareLoadMod(path, metadata, out mod, out type);
 
         LogModLoadError(metadata.id, "missing dependencies");
         return false;
@@ -403,17 +410,19 @@ public static class Patcher {
     private static bool VersionsCompatible(SemVersion left, SemVersion right) =>
         left == right || left.Major != 0 && left.Major == right.Major;
 
-    private static bool TryPrepareLoadMod(string path, ModMetadata metadata, out IGameMakerMod? mod) {
+    private static bool TryPrepareLoadMod(string path, ModMetadata metadata, out IGameMakerMod? mod,
+        [NotNullWhen(true)] out Type? type) {
         try {
             if(metadata.mainAssembly is null) {
                 LogModLoadError(metadata.id, "mainAssembly is null");
                 mod = null;
+                type = null;
                 return false;
             }
 
             Assembly assembly = Assembly.LoadFrom(Path.Combine(path, metadata.mainAssembly));
 
-            Type? type = assembly.GetTypes()
+            type = assembly.GetTypes()
                 .FirstOrDefault(modType => modType.GetInterfaces().Contains(typeof(IGameMakerMod)));
             if(type is null) {
                 LogModLoadError(metadata.id, "mod type not found");
@@ -430,6 +439,7 @@ public static class Patcher {
         catch(Exception ex) {
             LogModLoadError(metadata.id, ex);
             mod = null;
+            type = null;
             return false;
         }
 
@@ -466,7 +476,7 @@ public static class Patcher {
         return true;
     }
 
-    private static Assembly? TempResolveModAssemblies(object? _, ResolveEventArgs args) => AppDomain
+    private static Assembly? ResolveModAssemblies(object? _, ResolveEventArgs args) => AppDomain
         .CurrentDomain.GetAssemblies()
         .FirstOrDefault(assembly => assembly.FullName == args.Name);
 
