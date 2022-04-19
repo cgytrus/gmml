@@ -7,7 +7,16 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+
     <NativeRuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</NativeRuntimeIdentifier>
+
+    <FinalOutputPath>bin\$(NativeRuntimeIdentifier)-$(TargetFramework)\$(Configuration)\</FinalOutputPath>
+    <OutputPath>$(FinalOutputPath)gmml\patcher\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,31 +27,32 @@
     <ProjectReference Include="..\UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj" />
   </ItemGroup>
 
-  <!-- i'm never touching more advanced msbuild in my life again. -->
-  <Target Name="BuildNativeProject" AfterTargets="Build">
+  <Target Name="BuildNativeProject" BeforeTargets="Build">
     <PropertyGroup>
-      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NativeRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NativeRuntimeIdentifier)\native\</NetHostDir>
-      <FinalOutputPath>$([System.IO.Path]::GetFullPath('$(OutputPath)gmml-final\'))</FinalOutputPath>
       <NativePlatform>UnknownNativePlatform</NativePlatform>
       <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x86'))">Win32</NativePlatform>
       <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x64'))">x64</NativePlatform>
+
+      <FullFinalOutputPath>$([System.IO.Path]::GetFullPath('$(FinalOutputPath)'))</FullFinalOutputPath>
+      <FullFinalOutputPath Condition="!HasTrailingSlash('$(FinalOutputPath)')">$(FullFinalOutputPath)\</FullFinalOutputPath>
+
+      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NativeRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NativeRuntimeIdentifier)\native\</NetHostDir>
     </PropertyGroup>
 
-    <ItemGroup>
-      <PatcherOutput Include="$(OutputPath)*" />
-      <PatcherOutputRuntimes Include="$(OutputPath)runtimes\**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(PatcherOutput)" DestinationFolder="$(FinalOutputPath)gmml\patcher" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(PatcherOutputRuntimes)" DestinationFiles="$(FinalOutputPath)gmml\patcher\runtimes\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" />
+    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FullFinalOutputPath);NetHostDir=$(NetHostDir)" />
+  </Target>
 
+  <Target Name="CreateModsFolder" BeforeTargets="Build">
     <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
+  </Target>
 
-    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FinalOutputPath);NetHostDir=$(NetHostDir)" />
-
+  <Target Name="HardlinkOutput" AfterTargets="Build">
     <ItemGroup>
-      <FinalOutput Include="$(FinalOutputPath)**\*" />
+      <OutputFiles Include="$(FinalOutputPath)**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(FinalOutput)" DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
+    <Copy SourceFiles="@(OutputFiles)"
+          DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
   </Target>
 
 </Project>

@@ -23,7 +23,7 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 ### Compile
 1. Clone GMML recursively (`git clone https://github.com/cgytrus/gmml.git --recursive`)
 2. Restore GmmlPatcher (`dotnet restore GmmlPatcher`)
-3. Build GmmlPatcher (`msbuild GmmlPatcher -p:Configuration=Release -p:Platform=AnyCPU` from the Native Tools Command Prompt)
+3. Build GmmlPatcher (`msbuild GmmlPatcher -p:Configuration=Release` from the Native Tools Command Prompt)
 
    *Note: if you're not using Visual Studio, you have to select the VS/VS Build Tools
 MSBuild installation in your IDE settings*
@@ -33,10 +33,10 @@ If you want to compile for a platform different than your current, use the comma
 
 ```
 dotnet restore GmmlPatcher
-msbuild GmmlPatcher -p:Configuration=Release -p:Platform=AnyCPU -p:NativeRuntimeIdentifier=<platform>
+msbuild GmmlPatcher -p:Configuration=Release -p:NativeRuntimeIdentifier=<platform>
 ```
 ### Install
-Copy the contents of `<GmmlPatcher output path>/gmml-final` into the game's root
+Copy the contents of GmmlPatcher output into the game's root
 **or**
 1. Create `_set_game_dir.bat` in `scripts/bat` and paste the following contents into it,
 replacing `<game dir>` with the path to your game:
