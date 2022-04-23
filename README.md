@@ -45,8 +45,9 @@ set GAME_DIR=<game dir>
 ```
 
 2. Run the `patcher.bat` and `mods.bat` or `mods_no_example.bat` scripts,
-they will symlink `GmmlPatcher`'s and the other projects' build outputs respectively
+they will hardlink `GmmlPatcher`'s and the other projects' build outputs respectively
 to the correct locations in your game folder to allow for easier debugging
+(not symlink because that requires special permissions.. for... some reason)
 
 The final structure would look something like this:
 ```

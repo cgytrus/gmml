@@ -47,11 +47,8 @@
     <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
   </Target>
 
-  <Target Name="HardlinkOutput" AfterTargets="Build">
-    <ItemGroup>
-      <OutputFiles Include="$(FinalOutputPath)**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(OutputFiles)" DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
+  <Target Name="SetCurrentPath" AfterTargets="Build">
+    <WriteLinesToFile File="bin\current.txt" Overwrite="true" Lines="$(FinalOutputPath)" />
   </Target>
 
 </Project>
