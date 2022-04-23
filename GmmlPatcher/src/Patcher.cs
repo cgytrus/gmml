@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
+using GmmlInteropGenerator;
+
 using Semver;
 
 using UndertaleModLib;
@@ -40,7 +42,10 @@ public static class Patcher {
         if(_errored) return original;
         int originalSize = *size;
         try {
-            if(!_loadedAtLeastOnce) AppDomain.CurrentDomain.AssemblyResolve += ResolveModAssemblies;
+            if(!_loadedAtLeastOnce) {
+                AppDomain.CurrentDomain.AssemblyResolve += ResolveModAssemblies;
+                InteropSourceGenerator.Workaround();
+            }
             _loadedAtLeastOnce = true;
 
             QueueAndExposeMods();

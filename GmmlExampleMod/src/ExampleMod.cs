@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 
 using GmmlHooker;
+
+using GmmlInteropGenerator;
+using GmmlInteropGenerator.Types;
 
 using GmmlPatcher;
 
@@ -12,7 +14,8 @@ namespace GmmlExampleMod;
 
 // see https://github.com/cgytrus/WysApi/WysExampleMod for more examples
 // ReSharper disable once UnusedType.Global
-public class ExampleMod : IGameMakerMod {
+[EnableSimpleGmlInterop]
+public partial class ExampleMod : IGameMakerMod {
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Local")]
     private class Config {
         public string logText { get; private set; } = "";
@@ -43,14 +46,14 @@ return true", 2);
     }
 
     [GmlInterop("interop_test")]
-    public static string InteropTest(ref Interop.CInstance self, ref Interop.CInstance other, string text) {
+    public static string InteropTest(ref CInstance self, ref CInstance other, string text) {
         Console.WriteLine(text);
         return "hello from gml!!";
     }
 
     [GmlInterop("interop_test_1")]
     // ReSharper disable once ParameterTypeCanBeEnumerable.Global
-    public static void InteropTest1(ref Interop.CInstance self, ref Interop.CInstance other, object[] texts) {
+    public static void InteropTest1(ref CInstance self, ref CInstance other, string[] texts) {
         foreach(string text in texts)
             Console.WriteLine(text);
     }

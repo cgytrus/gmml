@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GmmlInteropGenerator\GmmlInteropGenerator.csproj" />
     <ProjectReference Include="..\UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj" />
   </ItemGroup>
 
@@ -50,9 +51,7 @@
     <ItemGroup>
       <OutputFiles Include="$(FinalOutputPath)**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(OutputFiles)"
-          DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)"
-          SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
+    <Copy SourceFiles="@(OutputFiles)" DestinationFiles="bin\Current\%(RecursiveDir)%(Filename)%(Extension)" SkipUnchangedFiles="true" UseHardlinksIfPossible="true" />
   </Target>
 
 </Project>
