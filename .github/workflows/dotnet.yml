@@ -1,0 +1,38 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore GmmlPatcher
+    - name: Build
+      run: msbuild GmmlPatcher -p:Configuration=Release
+    - name: Create Archive
+      run: |
+        dir .\GmmlPatcher\bin\ | Write-Output
+        dir .\GmmlPatcher\bin\* | Write-Output
+        dir .\GmmlPatcher\bin\*\Release | Write-Output
+        Compress-Archive -Path .\GmmlPatcher\bin\*\Release\* -DestinationPath .\Gmml.zip
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: Gmml.zip
+        path: Gmml.zip
