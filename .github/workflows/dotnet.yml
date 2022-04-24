@@ -1,4 +1,4 @@
-name: .NET
+name: GMML Windows
 
 on:
   push:
@@ -8,14 +8,12 @@ on:
 
 jobs:
   build:
-
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
-    - name: setup-msbuild
+    - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.1
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
@@ -23,16 +21,29 @@ jobs:
         dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore GmmlPatcher
-    - name: Build
-      run: msbuild GmmlPatcher -p:Configuration=Release
-    - name: Create Archive
+    - name: Build win-x64
+      run: msbuild GmmlPatcher -p:Configuration=Release -p:NativeRuntimeIdentifier=win-x64
+    - name: Build win-x86
+      run: msbuild GmmlPatcher -p:Configuration=Release -p:NativeRuntimeIdentifier=win-x86
+    - name: Archive win-x64
       run: |
         dir .\GmmlPatcher\bin\ | Write-Output
-        dir .\GmmlPatcher\bin\* | Write-Output
-        dir .\GmmlPatcher\bin\*\Release | Write-Output
-        Compress-Archive -Path .\GmmlPatcher\bin\*\Release\* -DestinationPath .\Gmml.zip
-    - name: Upload Artifacts
+        dir .\GmmlPatcher\bin\win-x64-net6.0 | Write-Output
+        dir .\GmmlPatcher\bin\win-x64-net6.0\Release | Write-Output
+        Compress-Archive -Path .\GmmlPatcher\bin\win-x64-net6.0\Release\* -DestinationPath .\gmml-win-x64.zip
+    - name: Archive win-x86
+      run: |
+        dir .\GmmlPatcher\bin\ | Write-Output
+        dir .\GmmlPatcher\bin\win-x86-net6.0 | Write-Output
+        dir .\GmmlPatcher\bin\win-x86-net6.0\Release | Write-Output
+        Compress-Archive -Path .\GmmlPatcher\bin\win-x86-net6.0\Release\* -DestinationPath .\gmml-win-x86.zip
+    - name: Upload win-x64 artifact
       uses: actions/upload-artifact@v3
       with:
-        name: Gmml.zip
-        path: Gmml.zip
+        name: gmml-win-x64.zip
+        path: gmml-win-x64.zip
+    - name: Upload win-x86 artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: gmml-win-x86.zip
+        path: gmml-win-x86.zip
