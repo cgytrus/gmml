@@ -66,3 +66,8 @@ The final structure would look something like this:
 +---version.dll
 \---...
 ```
+
+## Mod Creation
+To make a mod for use in gmml, [check out these templates to get started.](https://github.com/cgytrus/GMML.Templates)
+
+Documentation (maybe) coming soon. The templates are good for examples.
