@@ -1,5 +1,6 @@
 // thanks to Adaf for helping me figure out the proxy dll loading stuff
 
+// ReSharper disable CppZeroConstantCanBeReplacedWithNullptr
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <filesystem>
@@ -9,11 +10,9 @@
 #include "../lib/minhook/include/MinHook.h"
 
 #include <fstream>
-#include <iterator>
-#include <vector>
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 // .NET CLR hosting
 // https://github.com/dotnet/docs/blob/main/docs/core/tutorials/netcore-hosting.md
@@ -35,9 +34,9 @@ constexpr auto PROXY_MAX_PATH = 260;
 #undef DLL_NAME
 
 std::filesystem::path getSystemDirectory() {
-    const auto system_directory(std::make_unique<TCHAR[]>(PROXY_MAX_PATH));
-    ::GetSystemDirectory(system_directory.get(), PROXY_MAX_PATH);
-    return std::filesystem::path(system_directory.get());
+    const auto systemDirectory(std::make_unique<TCHAR[]>(PROXY_MAX_PATH));
+    ::GetSystemDirectory(systemDirectory.get(), PROXY_MAX_PATH);
+    return {systemDirectory.get()};
 }
 
 bool loadProxy() {
@@ -57,7 +56,6 @@ auto settings = gmmlSettings();
 
 void loadSettings(const char* path) {
     std::ifstream input(path);
-    auto size = input.gcount();
     auto setting = std::string();
 
     while(input >> setting) {
@@ -68,6 +66,7 @@ void loadSettings(const char* path) {
     input.close();
 }
 
+// ReSharper disable CppInconsistentNaming
 uintptr_t mmAllocAddress = 0x0;
 uintptr_t mmFreeAddress = 0x0;
 uintptr_t p_gGameFileNameAddress = 0x0;
@@ -88,6 +87,7 @@ uintptr_t YYCreateStringAddress = 0x0;
 uintptr_t ARRAY_RefAllocAddress = 0x0;
 uintptr_t SET_RValue_ArrayAddress = 0x0;
 uintptr_t GET_RValueAddress = 0x0;
+// ReSharper restore CppInconsistentNaming
 
 #include <Psapi.h>
 #include <processthreadsapi.h>
@@ -97,6 +97,7 @@ bool findAddresses() {
     MODULEINFO info;
     GetModuleInformation(GetCurrentProcess(), GetModuleHandle(0), &info, sizeof(MODULEINFO));
 
+    // ReSharper disable once CppInconsistentNaming
 #define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
 
     // somebody please save my code from this monstrosity
@@ -104,15 +105,19 @@ bool findAddresses() {
 
     mmFreeAddress = find("48 85 c9 0f 84 ?? ?? ?? ?? 53 48 83 ec 30 48 8b d9 48 8b ?? ?? ?? ?? ?? 48 85 c9 75 ?? b9 08 00 00 00 e8 ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? 48 8b c8 e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ??");
 
+    // ReSharper disable CppInconsistentNaming
     auto p_gGameFileNameAddressTemp = find("8d ?? ?? 03 f1 48 63 ce 45 0f b6 cd 41 b8 ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b f8 48 8b ?? ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 4c 8b ?? ?? ?? ?? ?? 8b d6 48 8b cf");
 
     p_gGameFileNameAddressTemp += 47;
-    auto p_gGameFileNameAddressTemp2 =
-        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 4) << 0x0 |
-        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 3) << 0x8 |
-        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 2) << 0x10 |
-        (uintptr_t)*(unsigned char*)(p_gGameFileNameAddressTemp - 1) << 0x18;
+    const auto p_gGameFileNameAddressTemp2 =
+        // not sure what those lints want me to do here
+        // please submit a pr if you do
+        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 4)) << 0x0 |  // NOLINT(performance-no-int-to-ptr)
+        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 3)) << 0x8 |  // NOLINT(performance-no-int-to-ptr)
+        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 2)) << 0x10 | // NOLINT(performance-no-int-to-ptr)
+        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 1)) << 0x18;  // NOLINT(performance-no-int-to-ptr)
     p_gGameFileNameAddress = p_gGameFileNameAddressTemp + p_gGameFileNameAddressTemp2;
+    // ReSharper restore CppInconsistentNaming
 
     LoadSave_ReadBundleFileAddress = find("40 53 48 81 ec 30 08 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 48 8b da 4c 8b c1 ba 00 08 00 00 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d3 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? ?? 48 33 cc e8 ?? ?? ?? ?? 48 81 c4 30 08 00 00 5b c3");
 
@@ -157,61 +162,65 @@ bool findAddresses() {
         GET_RValueAddress != 0x0;
 }
 
+// some performance-no-int-to-ptr thing for all of these as on line 113
 void* __cdecl mmAlloc(unsigned long long size, char const* why, int unk2, bool unk3) {
-    return ((void* (__cdecl*)(unsigned long long, char const*, int, bool))mmAllocAddress)(size, why, unk2, unk3);
+    return reinterpret_cast<void*(*)(unsigned long long, char const*, int, bool)>(mmAllocAddress)(size, why, unk2, unk3);
 }
 
 static void __cdecl mmFree(void const* block) {
-    ((void (__cdecl*)(void const*))mmFreeAddress)(block);
+    reinterpret_cast<void(*)(void const*)>(mmFreeAddress)(block);
 }
 
 #include "../include/gmrunner.h"
+// ReSharper disable CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
 void __cdecl Function_Add(char const* name, GML_Call function, int argCount, bool unk) {
-    ((Function_AddType*)Function_AddAddress)(name, function, argCount, unk);
+    reinterpret_cast<Function_AddType*>(Function_AddAddress)(name, function, argCount, unk);
 }
 void __cdecl YYError(char* error) {
-    ((void (__cdecl*)(char*, ...))YYErrorAddress)(error);
+    reinterpret_cast<void(*)(char*, ...)>(YYErrorAddress)(error);
 }
 
 bool __cdecl YYGetBool(RValue* arg, int argindex) {
-    return ((bool (__cdecl*)(RValue*, int))YYGetBoolAddress)(arg, argindex);
+    return reinterpret_cast<bool(*)(RValue*, int)>(YYGetBoolAddress)(arg, argindex);
 }
 float_t __cdecl YYGetFloat(RValue* arg, int argindex) {
-    return ((float_t (__cdecl*)(RValue*, int))YYGetFloatAddress)(arg, argindex);
+    return reinterpret_cast<float_t(*)(RValue*, int)>(YYGetFloatAddress)(arg, argindex);
 }
 int32_t __cdecl YYGetInt32(RValue* arg, int argindex) {
-    return ((int32_t (__cdecl*)(RValue*, int))YYGetInt32Address)(arg, argindex);
+    return reinterpret_cast<int32_t(*)(RValue*, int)>(YYGetInt32Address)(arg, argindex);
 }
 int64_t __cdecl YYGetInt64(RValue* arg, int argindex) {
-    return ((int64_t (__cdecl*)(RValue*, int))YYGetInt64Address)(arg, argindex);
+    return reinterpret_cast<int64_t(*)(RValue*, int)>(YYGetInt64Address)(arg, argindex);
 }
 void* __cdecl YYGetPtr(RValue* arg, int argindex) {
-    return ((void* (__cdecl*)(RValue*, int))YYGetPtrAddress)(arg, argindex);
+    return reinterpret_cast<void*(*)(RValue*, int)>(YYGetPtrAddress)(arg, argindex);
 }
 double_t __cdecl YYGetReal(RValue* arg, int argindex) {
-    return ((double (__cdecl*)(RValue*, int))YYGetRealAddress)(arg, argindex);
+    return reinterpret_cast<double(*)(RValue*, int)>(YYGetRealAddress)(arg, argindex);
 }
 char* __cdecl YYGetString(RValue* arg, int argindex) {
-    return ((char* (__cdecl*)(RValue*, int))YYGetStringAddress)(arg, argindex);
+    return reinterpret_cast<char*(*)(RValue*, int)>(YYGetStringAddress)(arg, argindex);
 }
 uint32_t __cdecl YYGetUint32(RValue* arg, int argindex) {
-    return ((uint32_t (__cdecl*)(RValue*, int))YYGetUint32Address)(arg, argindex);
+    return reinterpret_cast<uint32_t(*)(RValue*, int)>(YYGetUint32Address)(arg, argindex);
 }
 void __cdecl YYCreateString(RValue* value, char* str) {
-    ((void (__cdecl*)(RValue*, char*))YYCreateStringAddress)(value, str);
+    reinterpret_cast<void(*)(RValue*, char*)>(YYCreateStringAddress)(value, str);
 }
 RefDynamicArrayOfRValue* __cdecl ARRAY_RefAlloc() {
-    return ((RefDynamicArrayOfRValue* (__cdecl*)())ARRAY_RefAllocAddress)();
+    return reinterpret_cast<RefDynamicArrayOfRValue*(*)()>(ARRAY_RefAllocAddress)();
 }
 void __cdecl SET_RValue_Array(RValue* arr, RValue* value, YYObjectBase* unk, int index) {
-    ((void (__cdecl*)(RValue*, RValue*, YYObjectBase*, int))SET_RValue_ArrayAddress)(arr, value, unk, index);
+    reinterpret_cast<void(*)(RValue*, RValue*, YYObjectBase*, int)>(SET_RValue_ArrayAddress)(arr, value, unk, index);
 }
 bool __cdecl GET_RValue(RValue* value, RValue* arr, YYObjectBase* unk, int index, bool unk1, bool unk2) {
-    return ((bool (__cdecl*)(RValue*, RValue*, YYObjectBase*, int, bool, bool))GET_RValueAddress)(value, arr, unk, index, unk1, unk2);
+    return reinterpret_cast<bool(*)(RValue*, RValue*, YYObjectBase*, int, bool, bool)>(GET_RValueAddress)(value, arr, unk, index, unk1, unk2);
 }
+// ReSharper restore CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
 
 using string_t = std::basic_string<char_t>;
 
+// ReSharper disable All
 namespace {
     // Globals to hold hostfxr exports
     hostfxr_initialize_for_runtime_config_fn init_fptr;
@@ -222,44 +231,49 @@ namespace {
     bool load_hostfxr();
     load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
+// ReSharper restore All
 
+// ReSharper disable CppInconsistentNaming
 unsigned char* (CORECLR_DELEGATE_CALLTYPE* modifyDataManaged)(int, unsigned char*, int*);
 void (CORECLR_DELEGATE_CALLTYPE* InitGMLFunctionsManaged)();
+// ReSharper restore CppInconsistentNaming
 bool startClrHost() {
     if(!load_hostfxr()) {
         MessageBoxA(NULL, "Error when loading hostfxr", NULL, MB_OK);
         return false;
     }
 
-    const string_t config_path = TEXT("gmml\\patcher\\GmmlPatcher.runtimeconfig.json");
-    load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
-    load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
-    if(load_assembly_and_get_function_pointer == nullptr) {
+    const string_t configPath = TEXT("gmml\\patcher\\GmmlPatcher.runtimeconfig.json");
+    // shut up dumbass
+    // ReSharper disable once CppLocalVariableMayBeConst
+    load_assembly_and_get_function_pointer_fn loadAssemblyAndGetFunction = get_dotnet_load_assembly(
+        configPath.c_str());
+    if(loadAssemblyAndGetFunction == nullptr) {
         MessageBoxA(NULL, "Error when starting .NET CLR", NULL, MB_OK);
         return false;
     }
 
-    const string_t dotnetlib_path = TEXT("gmml\\patcher\\GmmlPatcher.dll");
+    const string_t dotnetLibPath = TEXT("gmml\\patcher\\GmmlPatcher.dll");
 
-    int rc = load_assembly_and_get_function_pointer(
-        dotnetlib_path.c_str(),
+    int rc = loadAssemblyAndGetFunction(
+        dotnetLibPath.c_str(),
         TEXT("GmmlPatcher.Patcher, GmmlPatcher"), // type
         TEXT("ModifyData"), // method
         UNMANAGEDCALLERSONLY_METHOD,
         nullptr,
-        (void**)&modifyDataManaged);
+        reinterpret_cast<void**>(&modifyDataManaged));
     if(rc != 0 || modifyDataManaged == nullptr) {
         MessageBoxA(NULL, "Error when getting GmmlPatcher.Patcher.ModifyData", NULL, MB_OK);
         return false;
     }
 
-    rc = load_assembly_and_get_function_pointer(
-        dotnetlib_path.c_str(),
+    rc = loadAssemblyAndGetFunction(
+        dotnetLibPath.c_str(),
         TEXT("GmmlPatcher.Interop, GmmlPatcher"), // type
         TEXT("InitGmlFunctions"), // method
         UNMANAGEDCALLERSONLY_METHOD,
         nullptr,
-        (void**)&InitGMLFunctionsManaged);
+        reinterpret_cast<void**>(&InitGMLFunctionsManaged));
     if(rc != 0 || InitGMLFunctionsManaged == nullptr) {
         MessageBoxA(NULL, "Error when getting GmmlPatcher.Interop.InitGmlFunctions", NULL, MB_OK);
         return false;
@@ -283,44 +297,48 @@ unsigned char* modifyData(int audioGroup, unsigned char* orig, int* size) {
 #pragma warning(push)
 // startClrHost guarantees not null
 #pragma warning(disable : 6011)
-    auto bytes = modifyDataManaged(audioGroup, orig, size);
+    const auto bytes = modifyDataManaged(audioGroup, orig, size);
 #pragma warning(pop)
 
     if(bytes != orig) mmFree(orig);
     return bytes;
 }
 
+// ReSharper disable once CppInconsistentNaming
 unsigned char* (__cdecl* LoadSave_ReadBundleFile_orig)(char*, int*);
+// ReSharper disable once CppInconsistentNaming
 unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
-    auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
-    auto g_pGameFileName = (char**)p_gGameFileNameAddress;
+    // ReSharper disable once CppInconsistentNaming
+    const auto g_pGameFileName = reinterpret_cast<char**>(p_gGameFileNameAddress);
 
-    auto fsPath = std::filesystem::path(path);
-    auto fsPathStem = fsPath.stem().string();
-    auto audioGroupName = "audiogroup";
+    const auto fsPath = std::filesystem::path(path);
+    const auto fsPathStem = fsPath.stem().string();
 
     int* modifySize = size;
     if(size == nullptr) {
-        struct stat stat_buf;
-        int rc = stat(path, &stat_buf);
-        modifySize = (int*)&stat_buf.st_size;
+        struct stat statBuffer{};
+        stat(path, &statBuffer);
+        modifySize = reinterpret_cast<int*>(&statBuffer.st_size);
     }
 
     if(strcmp(path, *g_pGameFileName) == 0) {
         return modifyData(0, LoadSave_ReadBundleFile_orig(path, size), modifySize);
     }
-    else if(fsPath.extension() == ".dat" && fsPathStem.starts_with(audioGroupName)) {
+    if(const auto audioGroupName = "audiogroup";
+        fsPath.extension() == ".dat" && fsPathStem.starts_with(audioGroupName)) {
         try {
-            auto audioGroup = std::stoi(fsPathStem.substr(strlen(audioGroupName)));
+            const auto audioGroup = std::stoi(fsPathStem.substr(strlen(audioGroupName)));
             return modifyData(audioGroup, LoadSave_ReadBundleFile_orig(path, size), modifySize);
         }
-        catch(std::invalid_argument) { }
+        catch(std::invalid_argument&) { }
     }
 
     return LoadSave_ReadBundleFile_orig(path, size);
 }
 
+// ReSharper disable once CppInconsistentNaming
 void (__cdecl* InitGMLFunctions_orig)();
+// ReSharper disable once CppInconsistentNaming
 void __cdecl InitGMLFunctions_hook() {
     if(InitGMLFunctionsManaged != nullptr || startClrHost())
 #pragma warning(push)
@@ -358,7 +376,10 @@ bool loadModLoader() {
 }
 #pragma warning(pop)
 
+// you dumb
+// ReSharper disable CppInconsistentNaming CppParameterNeverUsed
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+// ReSharper restore CppInconsistentNaming CppParameterNeverUsed
     switch(ul_reason_for_call) {
         case DLL_PROCESS_ATTACH:
             if(!loadProxy()) {
@@ -369,16 +390,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 MessageBoxA(NULL, "Failed to load mod loader", NULL, MB_OK);
                 return FALSE;
             }
-            //MessageBoxA(NULL, "ml loaded", "succ", MB_OK);
             break;
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
         case DLL_PROCESS_DETACH:
+        default:
             break;
     }
 
     return TRUE;
 }
+
+// ReSharper disable All
 
 /********************************************************************************************
  * Function used to load and activate .NET Core
@@ -446,3 +469,5 @@ namespace {
     }
     // </SnippetInitialize>
 }
+
+// ReSharper restore All
