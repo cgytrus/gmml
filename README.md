@@ -8,10 +8,17 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 3. Unpack the downloaded archive into the game's folder
 
 ## Usage
+### Players
 1. Put your mods in `<game root>/gmml/mods`
 2. Put mods' IDs (you can get them from the mods' `manifest.json` file) or paths (prefixed with your system's directory separator)
    in `mods/blacklist.txt` to ignore them
 3. Put mods' IDs in `mods/whitelist.txt` to enable the whitelist and only load those mods
+### Modders
+1. Create a mod using a [template](https://github.com/cgytrus/GMML.Templates)
+2. See [GMML](./GmmlExampleMod) and [WYS](https://github.com/cgytrus/WysApi/tree/main/WysExampleMod) example mods for examples
+#### If you have set the game path
+- Run `scripts/bat/libs.bat` to setup libraries
+- Run `scripts/bat/mods.bat` to install the mod (needs to be ran after build)
 
 ## Compilation
 ### Prerequisites
@@ -66,8 +73,3 @@ The final structure would look something like this:
 +---version.dll
 \---...
 ```
-
-## Mod Creation
-To make a mod for use in gmml, [check out these templates to get started.](https://github.com/cgytrus/GMML.Templates)
-
-Documentation (maybe) coming soon. The templates are good for examples.
