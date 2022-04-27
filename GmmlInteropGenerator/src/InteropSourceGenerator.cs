@@ -24,15 +24,13 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
     }
 
     private class GmlInteropMethodsSyntaxReceiver : ISyntaxReceiver {
-        public List<(string, ClassDeclarationSyntax)> types { get; } = new();
-        public List<(string, string, ClassDeclarationSyntax, MethodDeclarationSyntax, string)> methods { get; } = new();
+        public List<(string, string, ClassDeclarationSyntax, List<(MethodDeclarationSyntax, string)>)> types { get; } =
+            new();
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
             if(syntaxNode is not ClassDeclarationSyntax { Parent: BaseNamespaceDeclarationSyntax typeNamespace } type ||
                 !ContainsAttribute(type.AttributeLists, nameof(EnableSimpleGmlInteropAttribute), out _))
                 return;
-
-            types.Add((typeNamespace.Name.ToString(), type));
 
             StringBuilder usingsBuilder = new();
             foreach(SyntaxNode child in typeNamespace.Parent?.ChildNodes() ?? Array.Empty<SyntaxNode>()) {
@@ -42,14 +40,16 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
             }
             string fileUsings = usingsBuilder.ToString();
 
+            List<(MethodDeclarationSyntax, string)> methods = new();
+            types.Add((fileUsings, typeNamespace.Name.ToString(), type, methods));
+
             foreach(SyntaxNode child in type.ChildNodes()) {
                 if(child is not MethodDeclarationSyntax method ||
                     !ContainsAttribute(method.AttributeLists, nameof(GmlInteropAttribute),
                         out AttributeSyntax? attribute))
                     continue;
 
-                methods.Add((fileUsings, typeNamespace.Name.ToString(), type, method,
-                    attribute?.ArgumentList?.Arguments.ToString() ?? ""));
+                methods.Add((method, attribute?.ArgumentList?.Arguments.ToString() ?? ""));
             }
         }
 
@@ -76,26 +76,35 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
         context.RegisterForSyntaxNotifications(() => new GmlInteropMethodsSyntaxReceiver());
     }
 
-    public unsafe void Execute(GeneratorExecutionContext context) {
+    public void Execute(GeneratorExecutionContext context) {
         GmlInteropMethodsSyntaxReceiver? syntaxReceiver = (GmlInteropMethodsSyntaxReceiver?)context.SyntaxReceiver;
         MethodInfo? gmlCallInfo = typeof(GmlCall).GetMethod(nameof(GmlCall.Invoke));
         if(syntaxReceiver is null || gmlCallInfo is null)
             return;
 
-        List<(string, ClassDeclarationSyntax)> interopTypes = syntaxReceiver.types;
-        List<(string, string, ClassDeclarationSyntax, MethodDeclarationSyntax, string)> interopMethods =
-            syntaxReceiver.methods;
+        List<(string, string, ClassDeclarationSyntax, List<(MethodDeclarationSyntax, string)>)> interopTypes =
+            syntaxReceiver.types;
+
+        StringBuilder builder = new();
 
         const string dllImport = "[DllImport(\"version.dll\", CallingConvention = CallingConvention.Cdecl)]";
+        const string inline = "[MethodImpl(MethodImplOptions.AggressiveInlining)]";
+        const string assignKind = $"gmlValue->{nameof(RValue.kind)} = {nameof(RVKind)}.";
+        string gmlCallParams = string.Join(", ",
+            gmlCallInfo.GetParameters().Select(parameter => $"{parameter.ParameterType.Name} {parameter.Name}"));
 
-        foreach((string typeNamespace, ClassDeclarationSyntax type) in interopTypes)
-            context.AddSource($"{type.Identifier.ValueText}.g.cs", $@"// Auto-generated code
-using System;
+        foreach((string usings, string typeNamespace, ClassDeclarationSyntax type,
+                List<(MethodDeclarationSyntax method, string attributeArgs)> methods) in interopTypes) {
+            #region Class definition and a lot of pre-generated methods
+            builder.AppendLine($@"// Auto-generated code
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using {nameof(GmmlInteropGenerator)}.{nameof(GmmlInteropGenerator.Types)};
+{usings}
 namespace {typeNamespace};
 
 public partial class {type.Identifier.ValueText} {{
+    #region DLL imports
+
     {dllImport}
     private static extern unsafe void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
 
@@ -139,101 +148,215 @@ public partial class {type.Identifier.ValueText} {{
     {dllImport}
     private static extern unsafe bool GET_RValue({nameof(RValue)}* arr, {nameof(RValue)}* value,
         {nameof(YYObjectBase)}* unk, int index, bool unk1, bool unk2);
-}}
-");
 
-        StringBuilder builder = new();
+    #endregion
 
-        string gmlCallParams = string.Join(", ",
-            gmlCallInfo.GetParameters().Select(parameter => $"{parameter.ParameterType.Name} {parameter.Name}"));
+    #region Argument parsing methods
 
-        foreach((string usings, string typeNamespace, ClassDeclarationSyntax? type, MethodDeclarationSyntax? method,
-                string attributeArgs) in interopMethods) {
-            SeparatedSyntaxList<ParameterSyntax> allMethodParams = method.ParameterList.Parameters;
-            List<ParameterSyntax> methodParams = new(allMethodParams.Count - 2);
-            for(int i = 2; i < allMethodParams.Count; i++)
-                methodParams.Add(allMethodParams[i]);
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, bool value) {{
+        {assignKind}{nameof(RVKind.Bool)};
+        gmlValue->{nameof(RValue.valueBool)} = value;
+    }}
 
-            builder.Clear();
-            builder.Append($@"// Auto-generated code
-using System.Runtime.InteropServices;
-{usings}
-namespace {typeNamespace};
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, float value) {{
+        {assignKind}{nameof(RVKind.Real)};
+        gmlValue->{nameof(RValue.valueFloat)} = value;
+    }}
 
-public partial class {type.Identifier.ValueText} {{
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, double value) {{
+        {assignKind}{nameof(RVKind.Real)};
+        gmlValue->{nameof(RValue.valueReal)} = value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, int value) {{
+        {assignKind}{nameof(RVKind.Int32)};
+        gmlValue->{nameof(RValue.valueInt32)} = value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, uint value) {{
+        {assignKind}{nameof(RVKind.Int32)};
+        gmlValue->{nameof(RValue.valueUint32)} = value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, long value) {{
+        {assignKind}{nameof(RVKind.Int64)};
+        gmlValue->{nameof(RValue.valueInt64)} = value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, IntPtr value) {{
+        {assignKind}{nameof(RVKind.Ptr)};
+        gmlValue->{nameof(RValue.ptr)} = (void*)value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, UIntPtr value) {{
+        {assignKind}{nameof(RVKind.Ptr)};
+        gmlValue->{nameof(RValue.ptr)} = (void*)value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, sbyte* value) => YYCreateString(gmlValue, value);
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, byte* value) =>
+        YYCreateString(gmlValue, (sbyte*)value);
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, string value) =>
+        GmlSetValue(gmlValue, (sbyte*)Marshal.StringToHGlobalAnsi(value));
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, {nameof(YYObjectBase)}* value) {{
+        {assignKind}{nameof(RVKind.Object)};
+        gmlValue->{nameof(RValue.obj)} = value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, {nameof(YYObjectBase)} value) =>
+        GmlSetValue(gmlValue, &value);
+
+    // not sure if this will work
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, {nameof(CInstance)}* value) {{
+        {assignKind}{nameof(RVKind.Object)};
+        gmlValue->{nameof(RValue.obj)} = ({nameof(YYObjectBase)}*)value;
+    }}
+
+    {inline}
+    private static unsafe void GmlSetValue({nameof(RValue)}* gmlValue, {nameof(CInstance)} value) =>
+        GmlSetValue(gmlValue, &value);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out bool value) =>
+        value = YYGetBool(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out float value) =>
+        value = YYGetFloat(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out double value) =>
+        value = YYGetReal(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out int value) =>
+        value = YYGetInt32(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out uint value) =>
+        value = YYGetUint32(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out long value) =>
+        value = YYGetInt64(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out IntPtr value) =>
+        value = (IntPtr)YYGetPtr(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out UIntPtr value) =>
+        value = (UIntPtr)YYGetPtr(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out sbyte* value) =>
+        value = YYGetString(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out byte* value) =>
+        value = (byte*)YYGetString(args, argIndex);
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out string value) =>
+        value = Marshal.PtrToStringAnsi(({nameof(IntPtr)})YYGetString(args, argIndex));
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out {nameof(YYObjectBase)}* value) =>
+        value = args[argIndex].{nameof(RValue.obj)};
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out {nameof(YYObjectBase)} value) =>
+        value = *args[argIndex].{nameof(RValue.obj)};
+
+    // not sure if this will work
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out {nameof(CInstance)}* value) =>
+        value = ({nameof(CInstance)}*)args[argIndex].{nameof(RValue.obj)};
+
+    {inline}
+    private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out {nameof(CInstance)} value) =>
+        value = *({nameof(CInstance)}*)args[argIndex].{nameof(RValue.obj)};
+
+    #endregion");
+            #endregion
+
+            foreach((MethodDeclarationSyntax? method, string? attributeArgs) in methods)
+                GenerateMethod(builder, gmlCallParams, method, attributeArgs);
+
+            builder.AppendLine("}");
+
+            context.AddSource($"{type.Identifier.ValueText}.g.cs", builder.ToString());
+        }
+    }
+
+    private static void GenerateMethod(StringBuilder builder, string gmlCallParams,
+        MethodDeclarationSyntax method, string attributeArgs) {
+        SeparatedSyntaxList<ParameterSyntax> allMethodParams = method.ParameterList.Parameters;
+        List<ParameterSyntax> methodParams = new(allMethodParams.Count - 2);
+        for(int i = 2; i < allMethodParams.Count; i++)
+            methodParams.Add(allMethodParams[i]);
+
+        builder.Append($@"
     [{nameof(AdvancedGmlInteropAttribute)}({attributeArgs}, {methodParams.Count.ToString()})]
     public static unsafe void {method.Identifier.ValueText}_Advanced({gmlCallParams}) {{
 ");
 
-            for(int i = 0; i < methodParams.Count; i++) {
-                ParameterSyntax parameter = methodParams[i];
-                GenerateGmlToManaged(builder, parameter.Type?.ToString() ?? "", parameter.Identifier.ValueText,
-                    "args", i.ToString());
-                builder.AppendLine();
-            }
-
-            string methodArgs = string.Join(", ",
-                methodParams.Select(parameter => GetManagedArgName(parameter.Identifier.ValueText)));
-
-            string returnType = method.ReturnType.ToString();
-            bool hasReturn = returnType != "void";
-            string returnStatement = hasReturn ? $"{returnType} methodResult = " : "";
-            string firstArgs = methodParams.Count > 0 ?
-                "ref *selfInstance, ref *otherInstance, " :
-                "ref *selfInstance, ref *otherInstance";
-            builder.AppendLine($"{Indent}{returnStatement}{method.Identifier.ValueText}({firstArgs}{methodArgs});");
-            if(hasReturn)
-                GenerateManagedToGml(builder, returnType, "result", "methodResult");
-
-            builder.Append("    }\n}\n");
-
-            context.AddSource($"{type.Identifier.ValueText}.{method.Identifier.ValueText}.g.cs", builder.ToString());
+        for(int i = 0; i < methodParams.Count; i++) {
+            ParameterSyntax parameter = methodParams[i];
+            GenerateGmlToManaged(builder, parameter.Type?.ToString() ?? "", parameter.Identifier.ValueText,
+                "args", i.ToString());
+            builder.AppendLine();
         }
+
+        string methodArgs = string.Join(", ",
+            methodParams.Select(parameter => GetManagedArgName(parameter.Identifier.ValueText)));
+
+        string returnType = method.ReturnType.ToString();
+        bool hasReturn = returnType != "void";
+        string returnStatement = hasReturn ? $"{returnType} methodResult = " : "";
+        string firstArgs = methodParams.Count > 0 ?
+            "ref *selfInstance, ref *otherInstance, " :
+            "ref *selfInstance, ref *otherInstance";
+        builder.AppendLine($"{Indent}{returnStatement}{method.Identifier.ValueText}({firstArgs}{methodArgs});");
+        if(hasReturn)
+            GenerateManagedToGml(builder, returnType, "result", "methodResult");
+
+        builder.AppendLine("    }");
     }
 
     private static string GetManagedArgName(string name) => $"{name}Managed";
 
     // ReSharper disable once CognitiveComplexity
-    private static unsafe void GenerateGmlToManaged(StringBuilder builder, string typeStr, string name,
+    private static void GenerateGmlToManaged(StringBuilder builder, string typeStr, string name,
         string argArray, string index, string indent = Indent) {
         builder.AppendLine($"{indent}// {argArray}[{index}]: {typeStr} {name}");
         string managedArgName = GetManagedArgName(name);
         string assign = $"{indent}{typeStr} {managedArgName} = ";
-        Type? type = GetTypeFromString(typeStr);
 
-        string argName = $"{name}Arg";
-        builder.AppendLine($"{indent}{nameof(RValue)} {argName} = {argArray}[{index}];");
-        if(type == typeof(bool))
-            builder.AppendLine($"{assign}YYGetBool({argArray}, {index});");
-        else if(type == typeof(float))
-            builder.AppendLine($"{assign}YYGetFloat({argArray}, {index});");
-        else if(type == typeof(double))
-            builder.AppendLine($"{assign}YYGetReal({argArray}, {index});");
-        else if(type == typeof(int))
-            builder.AppendLine($"{assign}YYGetInt32({argArray}, {index});");
-        else if(type == typeof(uint))
-            builder.AppendLine($"{assign}YYGetUint32({argArray}, {index});");
-        else if(type == typeof(long))
-            builder.AppendLine($"{assign}YYGetInt64({argArray}, {index});");
-        else if(type == typeof(YYObjectBase*))
-            builder.AppendLine($"{assign}{argName}.{nameof(RValue.obj)};");
-        else if(type == typeof(IntPtr))
-            builder.AppendLine($"{assign}({nameof(IntPtr)})YYGetPtr({argArray}, {index});");
-        else if(type == typeof(sbyte*))
-            builder.AppendLine($"{assign}YYGetString({argArray}, {index});");
-        else if(type?.IsPointer ?? false)
-            builder.AppendLine($"{assign}({typeStr})YYGetPtr({argArray}, {index});");
-        else if(type == typeof(string)) {
-            const string ptrToStringAnsi = $"{nameof(Marshal)}.{nameof(Marshal.PtrToStringAnsi)}";
-            builder.AppendLine($"{assign}{ptrToStringAnsi}(({nameof(IntPtr)})YYGetString({argArray}, {index}));");
-        }
-        else if(type?.IsArray ?? false) {
+        if(IsArray(typeStr)) {
             string arrayPtrName = $"{managedArgName}Ptr";
             string indexName = $"{managedArgName}Index";
             string elementName = $"{managedArgName}Element";
-            string arrayTypeStr = type.GetElementType()?.FullName ?? "";
+            string arrayTypeStr = GetArrayType(typeStr);
 
-            builder.AppendLine($@"{indent}{nameof(RefDynamicArrayOfRValue)}* {arrayPtrName} = {argName}.refArray;
+            builder.AppendLine($@"{indent}{nameof(RefDynamicArrayOfRValue)}* {arrayPtrName} = {argArray}[{index}].refArray;
 {assign}new {arrayTypeStr}[{arrayPtrName}->length];
 {indent}for(int {indexName} = 0; {indexName} < {managedArgName}.Length; {indexName}++) {{");
 
@@ -243,81 +366,25 @@ public partial class {type.Identifier.ValueText} {{
             builder.AppendLine($"{indent}{IndentLevel}{managedArgName}[{indexName}] = {GetManagedArgName(elementName)};");
             builder.AppendLine($"{indent}}}");
         }
-        else {
-            builder.AppendLine($"{indent}// Conversion failed");
-            builder.AppendLine($"{assign}default;");
+        else if(IsUnknownPointer(typeStr)) {
+            builder.AppendLine($"{indent}GmlGetValue({argArray}, {index}, out void* {managedArgName}Intermediary);");
+            builder.AppendLine($"{indent}{typeStr} {managedArgName} = {typeStr}{managedArgName}Intermediary;");
         }
+        else
+            builder.AppendLine($"{indent}GmlGetValue({argArray}, {index}, out {typeStr} {managedArgName});");
     }
 
     // ReSharper disable once CognitiveComplexity
-    private static unsafe void GenerateManagedToGml(StringBuilder builder, string typeStr, string resultName,
+    private static void GenerateManagedToGml(StringBuilder builder, string typeStr, string resultName,
         string valueName, string indent = Indent) {
-        Type? type = GetTypeFromString(typeStr);
 
-        string assignKind = $"{indent}{resultName}->{nameof(RValue.kind)} = {nameof(RVKind)}.";
-
-        if(type == typeof(bool)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Bool)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueBool)} = {valueName};");
-        }
-        else if(type == typeof(float)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Real)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueFloat)} = {valueName};");
-        }
-        else if(type == typeof(double)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Real)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueReal)} = {valueName};");
-        }
-        else if(type == typeof(int)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Int32)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueInt32)} = {valueName};");
-        }
-        else if(type == typeof(uint)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Int32)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueUint32)} = {valueName};");
-        }
-        else if(type == typeof(long)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Int64)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.valueInt64)} = {valueName};");
-        }
-        else if(type == typeof(IntPtr)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Ptr)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.ptr)} = (void*){valueName};");
-        }
-        else if(type == typeof(sbyte*))
-            builder.AppendLine($"{indent}YYCreateString({resultName}, {valueName});");
-        else if(type == typeof(YYObjectBase*)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Object)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.obj)} = {valueName};");
-        }
-        else if(type == typeof(YYObjectBase)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Object)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.obj)} = &{valueName};");
-        }
-        // not sure if this will work
-        else if(type == typeof(CInstance*)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Object)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.obj)} = ({nameof(YYObjectBase)}*){valueName};");
-        }
-        else if(type == typeof(CInstance)) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Object)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.obj)} = ({nameof(YYObjectBase)}*)&{valueName};");
-        }
-        else if(type?.IsPointer ?? false) {
-            builder.AppendLine($"{assignKind}{nameof(RVKind.Ptr)};");
-            builder.AppendLine($"{indent}{resultName}->{nameof(RValue.ptr)} = (void*)&{valueName};");
-        }
-        else if(type == typeof(string)) {
-            const string stringToHGlobalAnsi = $"{nameof(Marshal)}.{nameof(Marshal.StringToHGlobalAnsi)}";
-            builder.AppendLine($"{indent}YYCreateString({resultName}, (sbyte*){stringToHGlobalAnsi}({valueName}));");
-        }
-        else if(type?.IsArray ?? false) {
+        if(IsArray(typeStr)) {
             string indexName = $"{valueName}Index";
             string elementName = $"{resultName}Element";
             string elementPtrName = $"{elementName}Ptr";
-            string arrayTypeStr = type.GetElementType()?.FullName ?? "";
+            string arrayTypeStr = GetArrayType(typeStr);
 
-            builder.AppendLine($@"{assignKind}{nameof(RVKind.Array)};
+            builder.AppendLine($@"{indent}{resultName}->{nameof(RValue.kind)} = {nameof(RVKind)}.{nameof(RVKind.Array)};
 {indent}{resultName}->{nameof(RValue.refArray)} = ARRAY_RefAlloc();
 {indent}for(int {indexName} = 0; {indexName} < {valueName}.Length; {indexName}++) {{
 {indent}{IndentLevel}{nameof(RValue)} {elementName} = new();
@@ -329,28 +396,19 @@ public partial class {type.Identifier.ValueText} {{
             builder.AppendLine($"{indent}{IndentLevel}SET_RValue_Array({resultName}, {elementPtrName}, ({nameof(YYObjectBase)}*)0), {indexName}");
             builder.AppendLine($"{indent}}}");
         }
+        else if(IsUnknownPointer(typeStr))
+            builder.AppendLine($"{indent}GmlSetValue({resultName}, (void*){valueName});");
         else
-            builder.AppendLine($@"{indent}// Conversion failed
-{indent}*{resultName} = new {nameof(RValue)}() {{
-{indent}{IndentLevel}{nameof(RValue.kind)} = {nameof(RVKind)}.{nameof(RVKind.Unset)}
-{indent}}};
-");
+            builder.AppendLine($"{indent}GmlSetValue({resultName}, {valueName});");
     }
 
-    private static Type? GetTypeFromString(string typeStr) => Type.GetType(typeStr) ?? typeStr switch {
-        "bool" => typeof(bool),
-        "float" => typeof(float),
-        "double" => typeof(double),
-        "int" => typeof(int),
-        "uint" => typeof(uint),
-        "long" => typeof(long),
-        $"{nameof(YYObjectBase)}*" => typeof(YYObjectBase*),
-        nameof(IntPtr) => typeof(IntPtr),
-        "sbyte*" => typeof(sbyte*),
-        _ when typeStr.EndsWith("*", StringComparison.Ordinal) => typeof(void*),
-        "string" => typeof(string),
-        _ when typeStr.EndsWith("[]", StringComparison.Ordinal) => GetTypeFromString(
-            typeStr.Substring(0, typeStr.Length - "[]".Length))?.MakeArrayType(),
-        _ => null
-    };
+    private static bool IsUnknownPointer(string typeStr) =>
+        typeStr != $"{nameof(YYObjectBase)}*" &&
+        typeStr != $"{nameof(CInstance)}*" &&
+        typeStr != "sbyte*" &&
+        typeStr.EndsWith("*", StringComparison.Ordinal);
+
+    private static bool IsArray(string typeStr) => typeStr.EndsWith("[]", StringComparison.Ordinal);
+
+    private static string GetArrayType(string typeStr) => typeStr.Substring(0, typeStr.Length - "[]".Length);
 }
