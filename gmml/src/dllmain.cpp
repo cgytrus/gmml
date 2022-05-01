@@ -87,6 +87,7 @@ uintptr_t YYCreateStringAddress = 0x0;
 uintptr_t ARRAY_RefAllocAddress = 0x0;
 uintptr_t SET_RValue_ArrayAddress = 0x0;
 uintptr_t GET_RValueAddress = 0x0;
+uintptr_t Code_Variable_Find_Slot_From_NameAddress = 0x0;
 // ReSharper restore CppInconsistentNaming
 
 #include <Psapi.h>
@@ -138,6 +139,7 @@ bool findAddresses() {
     ARRAY_RefAllocAddress = base + 0x1a02b0;
     SET_RValue_ArrayAddress = base + 0x1a24a0;
     GET_RValueAddress = base + 0x1a0fc0;
+    Code_Variable_Find_Slot_From_NameAddress = base + 0x1a4ae0;
 
 #undef find
 
@@ -159,7 +161,8 @@ bool findAddresses() {
         YYCreateStringAddress != 0x0 &&
         ARRAY_RefAllocAddress != 0x0 &&
         SET_RValue_ArrayAddress != 0x0 &&
-        GET_RValueAddress != 0x0;
+        GET_RValueAddress != 0x0 &&
+        Code_Variable_Find_Slot_From_NameAddress != 0x0;
 }
 
 // some performance-no-int-to-ptr thing for all of these as on line 113
@@ -215,6 +218,9 @@ void __cdecl SET_RValue_Array(RValue* arr, RValue* value, YYObjectBase* unk, int
 }
 bool __cdecl GET_RValue(RValue* value, RValue* arr, YYObjectBase* unk, int index, bool unk1, bool unk2) {
     return reinterpret_cast<bool(*)(RValue*, RValue*, YYObjectBase*, int, bool, bool)>(GET_RValueAddress)(value, arr, unk, index, unk1, unk2);
+}
+int __cdecl Code_Variable_Find_Slot_From_Name(YYObjectBase* obj, char* name) {
+    return reinterpret_cast<int(*)(YYObjectBase*, char*)>(Code_Variable_Find_Slot_From_NameAddress)(obj, name);
 }
 // ReSharper restore CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
 

@@ -32,3 +32,4 @@ EXPORTS
     ARRAY_RefAlloc
     SET_RValue_Array
     GET_RValue
+    Code_Variable_Find_Slot_From_Name

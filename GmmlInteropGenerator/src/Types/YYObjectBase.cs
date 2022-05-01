@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace GmmlInteropGenerator.Types;
 
 // ReSharper disable once InconsistentNaming
@@ -10,7 +12,7 @@ public unsafe struct YYObjectBase {
     public void* getOwnProperty;
     public void* deleteProperty;
     public void* defineOwnProperty;
-    public void* yyVarsMap; // CHashMap<int, RValue*>
+    public CHashMap<int, RValue>* yyVarsMap;
     public CWeakRef** weakRefs;
     public uint numWeakRefs;
     public uint nVars;
@@ -24,4 +26,18 @@ public unsafe struct YYObjectBase {
     public int kind;
     public int rvalueInitType;
     public int curSlot;
+
+    [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int Code_Variable_Find_Slot_From_Name(YYObjectBase* obj, sbyte* name);
+
+    public RValue* GetStructValue(string name) {
+        fixed(YYObjectBase* thisPtr = &this) {
+            sbyte* namePtr = (sbyte*)Marshal.StringToHGlobalAnsi(name);
+            int slot = Code_Variable_Find_Slot_From_Name(thisPtr, namePtr);
+            uint hash = CHashMap<int, IntPtr>.CalculateHash(slot);
+            if(!yyVarsMap->FindElement(hash, out RValue* value))
+                return (RValue*)0;
+            return value;
+        }
+    }
 }

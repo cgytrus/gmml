@@ -34,6 +34,9 @@ if argument1 == false {{
     return false
 }}
 show_debug_message(argument0)
+return true", 2);
+
+        data.CreateGlobalScript("scr_test_global", @$"show_debug_message(""hi from test global"")
 show_debug_message({new UndertaleString(config.logText)})
 
 show_debug_message(interop_test(""hello from c#!!""))
@@ -42,7 +45,14 @@ var arr = array_create(2)
 array_set(arr, 0, ""hello from c# 2: electric boogaloo"")
 array_set(arr, 1, ""hello from c# 3!!"")
 interop_test_1(arr)
-return true", 2);
+
+var someStruct = json_parse(""{{\""number\"":69,\""text\"":\""some test text\""}}"")
+show_debug_message(""before:"")
+show_debug_message(someStruct)
+
+show_debug_message(interop_test_2(someStruct))
+show_debug_message(someStruct)
+", 0, out _);
     }
 
     [GmlInterop("interop_test")]
@@ -56,5 +66,21 @@ return true", 2);
     public static void InteropTest1(ref CInstance self, ref CInstance other, string[] texts) {
         foreach(string text in texts)
             Console.WriteLine(text);
+    }
+
+    [GmlInterop("interop_test_2")]
+    public static unsafe YYObjectBase* InteropTest2(ref CInstance self, ref CInstance other, YYObjectBase* arg) {
+        RValue* numberValue = arg->GetStructValue("number");
+        RValue* textValue = arg->GetStructValue("text");
+
+        GmlGetValue(numberValue, 0, out int number);
+        GmlGetValue(textValue, 0, out string text);
+        Console.WriteLine($"{number}, {text}");
+
+        GmlSetValue(numberValue, 420);
+        GmlSetValue(textValue, "trolling");
+
+        Console.WriteLine("after:");
+        return arg;
     }
 }
