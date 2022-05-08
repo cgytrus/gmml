@@ -27,8 +27,20 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
             new();
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode) {
-            if(syntaxNode is not ClassDeclarationSyntax { Parent: BaseNamespaceDeclarationSyntax typeNamespace } type ||
-                !ContainsAttribute(type.AttributeLists, nameof(EnableSimpleGmlInteropAttribute), out _))
+            if(syntaxNode is not ClassDeclarationSyntax { Parent: BaseNamespaceDeclarationSyntax typeNamespace } type)
+                return;
+
+            List<(MethodDeclarationSyntax, string)> methods = new();
+            foreach(SyntaxNode child in type.ChildNodes()) {
+                if(child is not MethodDeclarationSyntax method ||
+                    !ContainsAttribute(method.AttributeLists, nameof(GmlInteropAttribute),
+                        out AttributeSyntax? attribute))
+                    continue;
+
+                methods.Add((method, attribute?.ArgumentList?.Arguments.ToString() ?? ""));
+            }
+
+            if(methods.Count <= 0)
                 return;
 
             StringBuilder usingsBuilder = new();
@@ -38,18 +50,7 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
                 usingsBuilder.AppendLine(usingDirective.ToString());
             }
             string fileUsings = usingsBuilder.ToString();
-
-            List<(MethodDeclarationSyntax, string)> methods = new();
             types.Add((fileUsings, typeNamespace.Name.ToString(), type, methods));
-
-            foreach(SyntaxNode child in type.ChildNodes()) {
-                if(child is not MethodDeclarationSyntax method ||
-                    !ContainsAttribute(method.AttributeLists, nameof(GmlInteropAttribute),
-                        out AttributeSyntax? attribute))
-                    continue;
-
-                methods.Add((method, attribute?.ArgumentList?.Arguments.ToString() ?? ""));
-            }
         }
 
         private static bool ContainsAttribute(IEnumerable<AttributeListSyntax> attributes, string name,

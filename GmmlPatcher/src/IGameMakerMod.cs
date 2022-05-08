@@ -5,7 +5,6 @@ using UndertaleModLib;
 
 namespace GmmlPatcher;
 
-[EnableSimpleGmlInterop]
 public interface IGameMakerMod {
     // audioGroup 0 = game data
     public void EarlyLoad(int audioGroup, UndertaleData data, ModData currentMod) { }

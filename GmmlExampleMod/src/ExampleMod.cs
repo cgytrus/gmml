@@ -14,7 +14,6 @@ namespace GmmlExampleMod;
 
 // see https://github.com/cgytrus/WysApi/WysExampleMod for more examples
 // ReSharper disable once UnusedType.Global
-[EnableSimpleGmlInterop]
 public partial class ExampleMod : IGameMakerMod {
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Local")]
     private class Config {
