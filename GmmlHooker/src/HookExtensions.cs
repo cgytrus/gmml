@@ -97,21 +97,21 @@ public static class HookExtensions {
         code.UpdateAddresses();
     }
 
-    public static void HardHook(this UndertaleData data, string function, string hook, ushort argCount) =>
-        data.Functions.ByName(function).HardHook(data, hook, argCount);
-
-    public static void HardHook(this UndertaleFunction function, UndertaleData data, string hook, ushort argCount) {
-        string hookName = GetDerivativeName(function.Name.Content, "hook");
+    public static void HardHook(this UndertaleData data, string function, string hook, ushort argCount) {
+        string hookName = GetDerivativeName(function, "hook");
         UndertaleCode hookCode = data.CreateLegacyScript(hookName, hook, argCount).Code;
         foreach(UndertaleCode code in data.Code) {
             if(code.ParentEntry is not null || code == hookCode) continue;
             code.Hook(data.CodeLocals.ByName(code.Name.Content), (origCode, locals) => {
                 AsmCursor cursor = new(data, origCode, locals);
-                while(cursor.GotoNext($"call.i {function.Name}(argc={argCount})"))
+                while(cursor.GotoNext($"call.i {function}(argc={argCount})"))
                     cursor.Replace($"call.i {hookName}(argc={argCount})");
             });
         }
     }
+
+    public static void HardHook(this UndertaleFunction function, UndertaleData data, string hook, ushort argCount) =>
+        data.HardHook(function.Name.Content, hook, argCount);
 
     public static Dictionary<string, UndertaleVariable> GetLocalVars(this UndertaleCodeLocals locals,
         UndertaleData data) => locals.Locals.ToDictionary(local => local.Name.Content, local =>
