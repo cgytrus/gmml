@@ -52,7 +52,7 @@ public static class HookExtensions {
         data.Code.ByName(code).Hook(data, data.CodeLocals.ByName(code), hook);
 
     public static void Hook(this UndertaleCode code, UndertaleData data, UndertaleCodeLocals locals, string hook) {
-        string originalName = $"gmml_{code.Name.Content}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
+        string originalName = GetDerivativeName(code.Name.Content, "orig");
         originalCodes.TryAdd(code.Name.Content, MoveCodeForHook(data, originalName, code, locals));
         code.ReplaceGmlSafe(hook.Replace("#orig#", $"{originalName}"), data);
     }
@@ -63,7 +63,7 @@ public static class HookExtensions {
         UndertaleCode hookedCode = hookedFunctionCode.ParentEntry;
         UndertaleCodeLocals hookedCodeLocals = data.CodeLocals.ByName(hookedCode.Name.Content);
 
-        string originalName = $"gmml_{hookedFunctionName}_orig_{Guid.NewGuid().ToString().Replace('-', '_')}";
+        string originalName = GetDerivativeName(hookedFunctionName, "orig");
 
         UndertaleScript originalFunctionScript =
             hookedCode.CreateFunctionDefinition(data, true, originalName, hookedFunctionCode.ArgumentsCount);
@@ -97,7 +97,26 @@ public static class HookExtensions {
         code.UpdateAddresses();
     }
 
+    public static void HardHook(this UndertaleData data, string function, string hook, ushort argCount) =>
+        data.Functions.ByName(function).HardHook(data, hook, argCount);
+
+    public static void HardHook(this UndertaleFunction function, UndertaleData data, string hook, ushort argCount) {
+        string hookName = GetDerivativeName(function.Name.Content, "hook");
+        UndertaleCode hookCode = data.CreateLegacyScript(hookName, hook, argCount).Code;
+        foreach(UndertaleCode code in data.Code) {
+            if(code.ParentEntry is not null || code == hookCode) continue;
+            code.Hook(data.CodeLocals.ByName(code.Name.Content), (origCode, locals) => {
+                AsmCursor cursor = new(data, origCode, locals);
+                while(cursor.GotoNext($"call.i {function.Name}(argc={argCount})"))
+                    cursor.Replace($"call.i {hookName}(argc={argCount})");
+            });
+        }
+    }
+
     public static Dictionary<string, UndertaleVariable> GetLocalVars(this UndertaleCodeLocals locals,
         UndertaleData data) => locals.Locals.ToDictionary(local => local.Name.Content, local =>
         data.Variables.First(variable => variable.VarID == (int)local.Index));
+
+    private static string GetDerivativeName(string name, string suffix) =>
+        $"gmml_{name}_{suffix}_{Guid.NewGuid().ToString().Replace('-', '_')}";
 }
