@@ -97,9 +97,14 @@ This message is a workaround to the CLR not wanting to load my dependencies prop
                 List<(MethodDeclarationSyntax method, string attributeArgs)> methods) in interopTypes) {
             #region Class definition and a lot of pre-generated methods
             builder.AppendLine($@"// Auto-generated code
+// ignore because the using might've already been included
+// but i'm too lazy to make it actually check if the using has already been there or not
+#pragma warning disable CS0105 // The using directive appeared previously in this namespace
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 {usings}
+#pragma warning restore CS0105 // The using directive appeared previously in this namespace
+
 namespace {typeNamespace};
 
 public partial class {type.Identifier.ValueText} {{
