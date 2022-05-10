@@ -72,7 +72,7 @@ public static class HookExtensions {
         hookedFunctionCode.Offset = 0;
 
         hookedCode.PrependFunctionCode(data, function, hook.Replace("#orig#", $"{originalFunctionScript.Name.Content}"),
-            hookedCodeLocals, hookedFunctionName);
+            hookedCodeLocals, originalFunctionScript.Code);
 
         hookedCode.Hook(hookedCodeLocals, (code, locals) => {
             AsmCursor cursor = new(data, code, locals);

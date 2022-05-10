@@ -102,7 +102,7 @@ public static class CreateExtensions {
     private static UndertaleScript CreateInlineFunction(this UndertaleCode parent, UndertaleData data, bool global,
         UndertaleCodeLocals parentLocals, string name, string code, ushort argCount) {
         UndertaleScript functionScript = parent.CreateFunctionDefinition(data, global, name, argCount);
-        parent.PrependFunctionCode(data, name, code, parentLocals, functionScript.Name.Content);
+        parent.PrependFunctionCode(data, name, code, parentLocals, functionScript.Code);
         return functionScript;
     }
 
@@ -140,7 +140,7 @@ public static class CreateExtensions {
     }
 
     internal static void PrependFunctionCode(this UndertaleCode code, UndertaleData data, string name, string gmlCode,
-        UndertaleCodeLocals locals, string functionName) {
+        UndertaleCodeLocals locals, UndertaleCode function) {
         UndertaleInstruction?[] childStarts = new UndertaleInstruction?[code.ChildEntries.Count];
         for(int i = 0; i < code.ChildEntries.Count; i++) {
             UndertaleCode child = code.ChildEntries[i];
@@ -150,6 +150,7 @@ public static class CreateExtensions {
         List<UndertaleInstruction> oldCode = new(code.Instructions);
         ObservableCollection<UndertaleCodeLocals.LocalVar> oldLocals = new(locals.Locals);
         code.ReplaceGmlSafe(gmlCode, data);
+        function.LocalsCount = code.LocalsCount;
         code.Replace(Assembler.Assemble(@$"
 b [func_def]
 
@@ -158,7 +159,7 @@ b [func_def]
 exit.i
 
 :[func_def]
-push.i {functionName}
+push.i {function.Name.Content}
 conv.i.v
 pushi.e -1
 conv.i.v
@@ -175,6 +176,7 @@ popz.v
                 continue;
             locals.Locals.Add(oldLocal);
         }
+        code.LocalsCount = (uint)locals.Locals.Count;
 
         for(int i = 0; i < code.ChildEntries.Count; i++) {
             UndertaleInstruction? childStart = childStarts[i];
