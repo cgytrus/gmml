@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
@@ -146,6 +148,7 @@ public static class CreateExtensions {
         }
 
         List<UndertaleInstruction> oldCode = new(code.Instructions);
+        ObservableCollection<UndertaleCodeLocals.LocalVar> oldLocals = new(locals.Locals);
         code.ReplaceGmlSafe(gmlCode, data);
         code.Replace(Assembler.Assemble(@$"
 b [func_def]
@@ -167,6 +170,11 @@ popz.v
 
 :[end]", data));
         code.Append(oldCode);
+        foreach(UndertaleCodeLocals.LocalVar oldLocal in oldLocals) {
+            if(locals.Locals.Any(local => local.Index == oldLocal.Index))
+                continue;
+            locals.Locals.Add(oldLocal);
+        }
 
         for(int i = 0; i < code.ChildEntries.Count; i++) {
             UndertaleInstruction? childStart = childStarts[i];
