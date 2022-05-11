@@ -101,14 +101,14 @@ public static class CreateExtensions {
 
     private static UndertaleScript CreateInlineFunction(this UndertaleCode parent, UndertaleData data, bool global,
         UndertaleCodeLocals parentLocals, string name, string code, ushort argCount) {
-        UndertaleScript functionScript = parent.CreateFunctionDefinition(data, global, name, argCount);
+        UndertaleScript functionScript = parent.CreateFunctionDefinition(data, global, name, argCount, 0);
         parent.PrependFunctionCode(data, name, code, parentLocals, functionScript.Code);
         return functionScript;
     }
 
     // TODO: make these two public and put massive warnings in the docs
     internal static UndertaleScript CreateFunctionDefinition(this UndertaleCode parent, UndertaleData data, bool global,
-        string name, ushort argCount) {
+        string name, ushort argCount, uint localsCount) {
         UndertaleString scriptName = data.Strings.MakeString(
             global ? $"gml_Script_{name}" : $"gml_Script_{name}_{parent.Name.Content}", out int scriptNameIndex);
 
@@ -123,7 +123,7 @@ public static class CreateExtensions {
 
         UndertaleCode scriptCode = new() {
             Name = scriptName,
-            LocalsCount = 0,
+            LocalsCount = localsCount,
             ArgumentsCount = argCount,
             ParentEntry = parent
         };

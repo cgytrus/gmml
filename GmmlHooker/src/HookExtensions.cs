@@ -66,13 +66,14 @@ public static class HookExtensions {
         string originalName = GetDerivativeName(hookedFunctionName, "orig");
 
         UndertaleScript originalFunctionScript =
-            hookedCode.CreateFunctionDefinition(data, true, originalName, hookedFunctionCode.ArgumentsCount);
+            hookedCode.CreateFunctionDefinition(data, true, originalName, hookedFunctionCode.ArgumentsCount,
+                hookedFunctionCode.LocalsCount);
 
         originalFunctionScript.Code.Offset = hookedFunctionCode.Offset;
         hookedFunctionCode.Offset = 0;
 
         hookedCode.PrependFunctionCode(data, function, hook.Replace("#orig#", $"{originalFunctionScript.Name.Content}"),
-            hookedCodeLocals, originalFunctionScript.Code);
+            hookedCodeLocals, hookedFunctionCode);
 
         hookedCode.Hook(hookedCodeLocals, (code, locals) => {
             AsmCursor cursor = new(data, code, locals);
