@@ -73,6 +73,8 @@ uintptr_t p_gGameFileNameAddress = 0x0;
 uintptr_t LoadSave_ReadBundleFileAddress = 0x0;
 
 uintptr_t InitGMLFunctionsAddress = 0x0;
+uintptr_t Code_Function_FindAddress = 0x0;
+uintptr_t Code_Function_GET_the_functionAddress = 0x0;
 uintptr_t Function_AddAddress = 0x0;
 uintptr_t YYErrorAddress = 0x0;
 uintptr_t YYGetBoolAddress = 0x0;
@@ -93,6 +95,10 @@ uintptr_t Code_Variable_Find_Slot_From_NameAddress = 0x0;
 #include <Psapi.h>
 #include <processthreadsapi.h>
 
+template<typename T> uintptr_t followReferenceAt(uintptr_t address) {
+    return address + sizeof(T) + *reinterpret_cast<const T*>(address);
+}
+
 bool findAddresses() {
     const auto base = reinterpret_cast<uintptr_t>(GetModuleHandle(0));
     MODULEINFO info;
@@ -101,68 +107,92 @@ bool findAddresses() {
     // ReSharper disable once CppInconsistentNaming
 #define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
 
-    // somebody please save my code from this monstrosity
-    mmAllocAddress = find("40 53 56 57 48 81 ec 50 04 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 41 ?? ?? ?? 48 8b ?? 48 85 ?? 75 ?? 33 c0 e9 ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d8 48 85 c0");
+    const auto runnerLoadGame0 = find("48 8d ?? ?? 41 ?? ?? ?? ?? 75");
+    mmAllocAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x25);
 
-    mmFreeAddress = find("48 85 c9 0f 84 ?? ?? ?? ?? 53 48 83 ec 30 48 8b d9 48 8b ?? ?? ?? ?? ?? 48 85 c9 75 ?? b9 08 00 00 00 e8 ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? 48 8b c8 e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ??");
+    const auto temp0 = find("49 83 ?? ?? 48 83 ?? ?? 78 ?? 48 8b");
+    mmFreeAddress = followReferenceAt<int32_t>(temp0 - 0x12);
 
-    // ReSharper disable CppInconsistentNaming
-    auto p_gGameFileNameAddressTemp = find("8d ?? ?? 03 f1 48 63 ce 45 0f b6 cd 41 b8 ?? ?? ?? ?? 48 8d ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b f8 48 8b ?? ?? ?? ?? ?? 48 89 ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? e8 ?? ?? ?? ?? 4c 8b ?? ?? ?? ?? ?? 8b d6 48 8b cf");
+    p_gGameFileNameAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x36);
 
-    p_gGameFileNameAddressTemp += 47;
-    const auto p_gGameFileNameAddressTemp2 =
-        // not sure what those lints want me to do here
-        // please submit a pr if you do
-        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 4)) << 0x0 |  // NOLINT(performance-no-int-to-ptr)
-        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 3)) << 0x8 |  // NOLINT(performance-no-int-to-ptr)
-        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 2)) << 0x10 | // NOLINT(performance-no-int-to-ptr)
-        static_cast<uintptr_t>(*reinterpret_cast<unsigned char*>(p_gGameFileNameAddressTemp - 1)) << 0x18;  // NOLINT(performance-no-int-to-ptr)
-    p_gGameFileNameAddress = p_gGameFileNameAddressTemp + p_gGameFileNameAddressTemp2;
-    // ReSharper restore CppInconsistentNaming
+    const auto runnerLoadGame1 = find("74 ?? 48 83 ?? ?? 74 ?? 8b 41");
+    // follow the jump and offset to the call we're searching for
+    LoadSave_ReadBundleFileAddress = followReferenceAt<int32_t>(followReferenceAt<char>(runnerLoadGame1 + 1) + 0x1c);
 
-    LoadSave_ReadBundleFileAddress = find("40 53 48 81 ec 30 08 00 00 48 8b ?? ?? ?? ?? ?? 48 33 c4 48 89 ?? ?? ?? ?? ?? ?? 48 8b da 4c 8b c1 ba 00 08 00 00 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b d3 48 8d ?? ?? ?? e8 ?? ?? ?? ?? 48 8b ?? ?? ?? ?? ?? ?? 48 33 cc e8 ?? ?? ?? ?? 48 81 c4 30 08 00 00 5b c3");
+    const auto temp1 = find("81 e7 ?? ?? ?? ?? 81 ff");
+    InitGMLFunctionsAddress = followReferenceAt<int32_t>(temp1 + 0x25);
+    YYGetPtrAddress = find("40 ?? 48 83 ?? ?? 48 63 ?? 48 8b");
 
-    // TODO: use sigscanning
-    // current addresses are for 2022.3.0.497 and probably only work on Will you Snail
-    InitGMLFunctionsAddress = base + 0x1e3400;
-    Function_AddAddress = base + 0x19f960;
-    YYErrorAddress = base + 0x1bc4d0;
-    YYGetBoolAddress = base + 0x1a3a10;
-    YYGetFloatAddress = base + 0x1a3b00;
-    YYGetInt32Address = base + 0x1a3c60;
-    YYGetInt64Address = base + 0x1a3d70;
-    YYGetPtrAddress = base + 0x1a3e90;
-    YYGetRealAddress = base + 0x1a3f70;
-    YYGetStringAddress = base + 0x1a40a0;
-    YYGetUint32Address = base + 0x1a4270;
-    YYCreateStringAddress = base + 0x1bc450;
-    ARRAY_RefAllocAddress = base + 0x1a02b0;
-    SET_RValue_ArrayAddress = base + 0x1a24a0;
-    GET_RValueAddress = base + 0x1a0fc0;
-    Code_Variable_Find_Slot_From_NameAddress = base + 0x1a4ae0;
+    const auto temp2 = find("75 ?? 44 8b ?? ba ?? ?? ?? ?? 33");
+    Code_Function_FindAddress = followReferenceAt<int32_t>(temp2 + 0x1a);
+    Code_Function_GET_the_functionAddress = followReferenceAt<int32_t>(temp2 + 0x36);
 
 #undef find
 
-    return mmAllocAddress != 0x0 &&
-        mmFreeAddress != 0x0 &&
-        p_gGameFileNameAddressTemp != 0x0 &&
-        LoadSave_ReadBundleFileAddress != 0x0 &&
-        InitGMLFunctionsAddress != 0x0 &&
-        Function_AddAddress != 0x0 &&
-        YYErrorAddress != 0x0 &&
-        YYGetBoolAddress != 0x0 &&
-        YYGetFloatAddress != 0x0 &&
-        YYGetInt32Address != 0x0 &&
-        YYGetInt64Address != 0x0 &&
+    return runnerLoadGame0 != 0x0 &&
+        temp0 != 0x0 &&
+        runnerLoadGame1 != 0x0 &&
+        temp1 != 0x0 &&
         YYGetPtrAddress != 0x0 &&
-        YYGetRealAddress != 0x0 &&
-        YYGetStringAddress != 0x0 &&
-        YYGetUint32Address != 0x0 &&
-        YYCreateStringAddress != 0x0 &&
-        ARRAY_RefAllocAddress != 0x0 &&
-        SET_RValue_ArrayAddress != 0x0 &&
-        GET_RValueAddress != 0x0 &&
-        Code_Variable_Find_Slot_From_NameAddress != 0x0;
+        temp2 != 0x0;
+}
+
+// ReSharper disable CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
+void __cdecl Code_Function_Find(const char* name, int* index) {
+    reinterpret_cast<void(*)(const char*, int*)>(Code_Function_FindAddress)(name, index);
+}
+void __cdecl Code_Function_GET_the_function(int index, const char** name, void** function, int* argCount) {
+    reinterpret_cast<void(*)(int, const char**, void**, int*)>(Code_Function_GET_the_functionAddress)(
+        index, name, function, argCount);
+}
+// ReSharper restore CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
+
+uintptr_t getBuiltInFunctionAddress(const char* name) {
+    int index;
+    Code_Function_Find(name, &index);
+    const char* retName;
+    void* function;
+    int argCount;
+    Code_Function_GET_the_function(index, &retName, &function, &argCount);
+    return reinterpret_cast<uintptr_t>(function);
+}
+
+bool findInteropAddresses() {
+    Function_AddAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(InitGMLFunctionsAddress + 0x32) + 0x1a);
+
+    const uintptr_t pathStartAddress = getBuiltInFunctionAddress("path_start");
+    const uintptr_t arraySetOwnerAddress = getBuiltInFunctionAddress("@@array_set_owner@@");
+    const uintptr_t placeSnappedAddress = getBuiltInFunctionAddress("place_snapped");
+    const uintptr_t stringLengthAddress = getBuiltInFunctionAddress("string_length");
+    const uintptr_t vertexUbyte4Address = getBuiltInFunctionAddress("vertex_ubyte4");
+    const uintptr_t ansiCharAddress = getBuiltInFunctionAddress("ansi_char");
+    const uintptr_t arrayCreateAddress = getBuiltInFunctionAddress("array_create");
+    const uintptr_t arraySetPostAddress = getBuiltInFunctionAddress("array_set_post");
+    const uintptr_t variableStructGetAddress = getBuiltInFunctionAddress("variable_struct_get");
+
+    YYGetFloatAddress = followReferenceAt<int32_t>(pathStartAddress + 0x4e);
+    YYGetBoolAddress = followReferenceAt<int32_t>(pathStartAddress + 0x3c);
+    YYGetInt32Address = followReferenceAt<int32_t>(pathStartAddress + 0x2d);
+    YYGetInt64Address = followReferenceAt<int32_t>(arraySetOwnerAddress + 0xc);
+    YYGetRealAddress = followReferenceAt<int32_t>(placeSnappedAddress + 0x25);
+    YYGetStringAddress = followReferenceAt<int32_t>(stringLengthAddress + 0x11);
+    YYGetUint32Address = followReferenceAt<int32_t>(vertexUbyte4Address + 0x44);
+    YYCreateStringAddress = followReferenceAt<int32_t>(ansiCharAddress + 0x27);
+    ARRAY_RefAllocAddress = followReferenceAt<int32_t>(arrayCreateAddress + 0x31);
+    GET_RValueAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x4e);
+    YYErrorAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x70);
+    SET_RValue_ArrayAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x84);
+    Code_Variable_Find_Slot_From_NameAddress = followReferenceAt<int32_t>(followReferenceAt<char>(variableStructGetAddress + 0x4e) + 0x2f);
+
+    return pathStartAddress != 0x0 &&
+        arraySetOwnerAddress != 0x0 &&
+        placeSnappedAddress != 0x0 &&
+        stringLengthAddress != 0x0 &&
+        vertexUbyte4Address != 0x0 &&
+        ansiCharAddress != 0x0 &&
+        arrayCreateAddress != 0x0 &&
+        arraySetPostAddress != 0x0 &&
+        variableStructGetAddress != 0x0;
 }
 
 // some performance-no-int-to-ptr thing for all of these as on line 113
@@ -346,14 +376,19 @@ unsigned char* __cdecl LoadSave_ReadBundleFile_hook(char* path, int* size) {
 void (__cdecl* InitGMLFunctions_orig)();
 // ReSharper disable once CppInconsistentNaming
 void __cdecl InitGMLFunctions_hook() {
+    InitGMLFunctions_orig();
+
+    if(!findInteropAddresses()) {
+        MessageBoxA(NULL, "Couldn't find interop functions. C# interop will not work", NULL, MB_OK);
+        return;
+    }
+
     if(InitGMLFunctionsManaged != nullptr || startClrHost())
 #pragma warning(push)
 // startClrHost guarantees not null
 #pragma warning(disable : 6011)
         InitGMLFunctionsManaged();
 #pragma warning(pop)
-
-    InitGMLFunctions_orig();
 }
 
 #pragma warning(push)
