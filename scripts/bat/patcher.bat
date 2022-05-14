@@ -1,7 +1,6 @@
 @echo off
 call .\_set_game_dir.bat
-set /p rootPath=<..\..\GmmlPatcher\bin\current.txt
-set rootPath=..\..\GmmlPatcher\%rootPath%
+set /p rootPath=<..\..\bin\current.txt
 
 call :symlink_file version.dll
 call :symlink_file version.pdb

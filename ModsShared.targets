@@ -1,0 +1,16 @@
+<Project>
+    <Target Name="CopyOutputToShared" AfterTargets="Build">
+        <ItemGroup>
+            <OutputFiles Include="$(OutputPath)\$(MSBuildProjectName).dll" />
+            <OutputFiles Include="$(OutputPath)\$(MSBuildProjectName).pdb" />
+            <OutputFiles Include="$(OutputPath)\metadata.json" />
+        </ItemGroup>
+        <ReadLinesFromFile File="$(SolutionDir)bin\current.txt">
+            <Output TaskParameter="Lines" PropertyName="SharedOutputPath" />
+        </ReadLinesFromFile>
+        <PropertyGroup>
+            <FinalSharedOutputPath>$(SharedOutputPath)gmml\mods\$(MSBuildProjectName)\</FinalSharedOutputPath>
+        </PropertyGroup>
+        <Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(FinalSharedOutputPath)%(RecursiveDir)" SkipUnchangedFiles="true" />
+    </Target>
+</Project>

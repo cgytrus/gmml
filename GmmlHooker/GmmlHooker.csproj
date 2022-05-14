@@ -16,8 +16,6 @@
     </None>
   </ItemGroup>
 
-  <Target Name="SetCurrentPath" AfterTargets="Build">
-    <WriteLinesToFile File="bin\current.txt" Overwrite="true" Lines="$(OutputPath)" />
-  </Target>
+  <Import Project="$(SolutionDir)/ModsShared.targets" />
 
 </Project>

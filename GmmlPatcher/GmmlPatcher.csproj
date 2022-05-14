@@ -9,46 +9,24 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-
-    <NativeRuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</NativeRuntimeIdentifier>
-
-    <FinalOutputPath>bin\$(NativeRuntimeIdentifier)-$(TargetFramework)\$(Configuration)\</FinalOutputPath>
-    <OutputPath>$(FinalOutputPath)gmml\patcher\</OutputPath>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Semver" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\gmml\gmml.vcxproj" ReferenceOutputAssembly="false" Exclude="**\*" />
     <ProjectReference Include="..\GmmlInteropGenerator\GmmlInteropGenerator.csproj" />
     <ProjectReference Include="..\UndertaleModTool\UndertaleModLib\UndertaleModLib.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildNativeProject" BeforeTargets="Build">
-    <PropertyGroup>
-      <NativePlatform>UnknownNativePlatform</NativePlatform>
-      <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x86'))">Win32</NativePlatform>
-      <NativePlatform Condition="$(NativeRuntimeIdentifier.EndsWith('-x64'))">x64</NativePlatform>
-
-      <FullFinalOutputPath>$([System.IO.Path]::GetFullPath('$(FinalOutputPath)'))</FullFinalOutputPath>
-      <FullFinalOutputPath Condition="!HasTrailingSlash('$(FinalOutputPath)')">$(FullFinalOutputPath)\</FullFinalOutputPath>
-
-      <NetHostDir>$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Host.$(NativeRuntimeIdentifier)\$(BundledNETCoreAppPackageVersion)\runtimes\$(NativeRuntimeIdentifier)\native\</NetHostDir>
-    </PropertyGroup>
-
-    <MSBuild Projects="..\gmml\gmml.vcxproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(NativePlatform);FinalOutputPath=$(FullFinalOutputPath);NetHostDir=$(NetHostDir)" />
-  </Target>
-
-  <Target Name="CreateModsFolder" BeforeTargets="Build">
-    <MakeDir Directories="$(FinalOutputPath)gmml\mods" />
-  </Target>
-
-  <Target Name="SetCurrentPath" AfterTargets="Build">
-    <WriteLinesToFile File="bin\current.txt" Overwrite="true" Lines="$(FinalOutputPath)" />
+  <Target Name="CopyOutputToShared" AfterTargets="Build">
+    <ItemGroup>
+      <OutputFiles Include="$(OutputPath)\**\*.*" />
+    </ItemGroup>
+    <ReadLinesFromFile File="$(SolutionDir)bin\current.txt">
+      <Output TaskParameter="Lines" PropertyName="SharedOutputPath" />
+    </ReadLinesFromFile>
+    <Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(SharedOutputPath)gmml\patcher\%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>
