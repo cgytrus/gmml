@@ -69,15 +69,28 @@ show_debug_message(someStruct)
 
     [GmlInterop("interop_test_2")]
     public static unsafe YYObjectBase* InteropTest2(ref CInstance self, ref CInstance other, YYObjectBase* arg) {
-        RValue* numberValue = arg->GetStructValue("number");
-        RValue* textValue = arg->GetStructValue("text");
+        RValue numberValue;
+        arg->GetStructValue("number", &numberValue);
 
-        GmlGetValue(numberValue, 0, out int number);
-        GmlGetValue(textValue, 0, out string text);
+        RValue textValue;
+        arg->GetStructValue("text", &textValue);
+
+        GmlGetValue(&numberValue, 0, out int number);
+        GmlGetValue(&textValue, 0, out string text);
         Console.WriteLine($"{number}, {text}");
 
-        GmlSetValue(numberValue, 420);
-        GmlSetValue(textValue, "trolling");
+        RValue newNumberValue = new();
+        GmlSetValue(&newNumberValue, 420);
+
+        RValue newTextValue = new();
+        GmlSetValue(&newTextValue, "trolling");
+
+        RValue anotherNewNumberValue = new();
+        GmlSetValue(&anotherNewNumberValue, 69420);
+
+        arg->SetStructValue("number", &newNumberValue);
+        arg->SetStructValue("text", &newTextValue);
+        arg->SetStructValue("number2", &anotherNewNumberValue);
 
         Console.WriteLine("after:");
         return arg;

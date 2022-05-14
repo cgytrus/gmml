@@ -129,7 +129,7 @@ public partial class {type.Identifier.ValueText} {{
     private static extern unsafe long YYGetInt64({nameof(RValue)}* args, int argIndex);
 
     {dllImport}
-    private static extern unsafe void* YYGetPtr({nameof(RValue)}* args, int argIndex);
+    private static extern unsafe IntPtr YYGetPtrOrInt({nameof(RValue)}* args, int argIndex);
 
     {dllImport}
     private static extern unsafe double YYGetReal({nameof(RValue)}* args, int argIndex);
@@ -264,11 +264,11 @@ public partial class {type.Identifier.ValueText} {{
 
     {inline}
     private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out IntPtr value) =>
-        value = (IntPtr)YYGetPtr(args, argIndex);
+        value = YYGetPtrOrInt(args, argIndex);
 
     {inline}
     private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out UIntPtr value) =>
-        value = (UIntPtr)YYGetPtr(args, argIndex);
+        value = (UIntPtr)(void*)YYGetPtrOrInt(args, argIndex);
 
     {inline}
     private static unsafe void GmlGetValue({nameof(RValue)}* args, int argIndex, out sbyte* value) =>

@@ -81,7 +81,7 @@ uintptr_t YYGetBoolAddress = 0x0;
 uintptr_t YYGetFloatAddress = 0x0;
 uintptr_t YYGetInt32Address = 0x0;
 uintptr_t YYGetInt64Address = 0x0;
-uintptr_t YYGetPtrAddress = 0x0;
+uintptr_t YYGetPtrOrIntAddress = 0x0;
 uintptr_t YYGetRealAddress = 0x0;
 uintptr_t YYGetStringAddress = 0x0;
 uintptr_t YYGetUint32Address = 0x0;
@@ -90,13 +90,20 @@ uintptr_t ARRAY_RefAllocAddress = 0x0;
 uintptr_t SET_RValue_ArrayAddress = 0x0;
 uintptr_t GET_RValueAddress = 0x0;
 uintptr_t Code_Variable_Find_Slot_From_NameAddress = 0x0;
+uintptr_t Variable_GetValue_DirectAddress = 0x0;
+uintptr_t Code_Variable_FindAlloc_Slot_From_NameAddress = 0x0;
+uintptr_t Variable_SetValue_DirectAddress = 0x0;
 // ReSharper restore CppInconsistentNaming
 
 #include <Psapi.h>
 #include <processthreadsapi.h>
 
+template<typename T> uintptr_t getReferenceAt(uintptr_t address) {
+    return *reinterpret_cast<const T*>(address);
+}
+
 template<typename T> uintptr_t followReferenceAt(uintptr_t address) {
-    return address + sizeof(T) + *reinterpret_cast<const T*>(address);
+    return address + sizeof(T) + getReferenceAt<T>(address);
 }
 
 bool findAddresses() {
@@ -107,25 +114,44 @@ bool findAddresses() {
     // ReSharper disable once CppInconsistentNaming
 #define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
 
+// need different signatures and offsets for x86 and x64
+#ifdef _WIN64
     const auto runnerLoadGame0 = find("48 8d ?? ?? 41 ?? ?? ?? ?? 75");
     mmAllocAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x25);
-
-    const auto temp0 = find("49 83 ?? ?? 48 83 ?? ?? 78 ?? 48 8b");
-    mmFreeAddress = followReferenceAt<int32_t>(temp0 - 0x12);
-
     p_gGameFileNameAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x36);
 
+    const auto temp0 = find("8b ?? 48 6b ?? ?? 48 03 ?? 48 8b");
+    mmFreeAddress = followReferenceAt<int32_t>(temp0 + 0x12);
+
     const auto runnerLoadGame1 = find("74 ?? 48 83 ?? ?? 74 ?? 8b 41");
-    // follow the jump and offset to the call we're searching for
     LoadSave_ReadBundleFileAddress = followReferenceAt<int32_t>(followReferenceAt<char>(runnerLoadGame1 + 1) + 0x1c);
 
     const auto temp1 = find("81 e7 ?? ?? ?? ?? 81 ff");
     InitGMLFunctionsAddress = followReferenceAt<int32_t>(temp1 + 0x25);
-    YYGetPtrAddress = find("40 ?? 48 83 ?? ?? 48 63 ?? 48 8b");
+    Function_AddAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(InitGMLFunctionsAddress + 0x32) + 0x1a);
 
     const auto temp2 = find("75 ?? 44 8b ?? ba ?? ?? ?? ?? 33");
     Code_Function_FindAddress = followReferenceAt<int32_t>(temp2 + 0x1a);
     Code_Function_GET_the_functionAddress = followReferenceAt<int32_t>(temp2 + 0x36);
+#else
+    const auto runnerLoadGame0 = find("8a ?? 46 84 ?? 75 ?? 6a ?? 2b ?? 8d");
+    mmAllocAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x1c);
+    p_gGameFileNameAddress = getReferenceAt<int32_t>(runnerLoadGame0 + 0x28);
+
+    const auto temp0 = find("8b ?? 03 ?? 8b ?? 85 ?? 74 ?? 50 e8");
+    mmFreeAddress = followReferenceAt<int32_t>(temp0 + 0xc);
+
+    const auto runnerLoadGame1 = find("74 ?? 83 39 ?? 74 ?? 8b 41 ?? a3");
+    LoadSave_ReadBundleFileAddress = followReferenceAt<int32_t>(followReferenceAt<char>(runnerLoadGame1 + 1) + 0x1a);
+
+    const auto temp1 = find("83 fd ?? c7"); // i'm scared this might break often
+    InitGMLFunctionsAddress = followReferenceAt<int32_t>(temp1 + 0x2e);
+    Function_AddAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(InitGMLFunctionsAddress + 0x26) + 0xf);
+
+    const auto temp2 = find("75 ?? 53 6a ?? 6a ?? e8");
+    Code_Function_FindAddress = followReferenceAt<int32_t>(temp2 + 0x13);
+    Code_Function_GET_the_functionAddress = followReferenceAt<int32_t>(temp2 + 0x32);
+#endif
 
 #undef find
 
@@ -133,7 +159,6 @@ bool findAddresses() {
         temp0 != 0x0 &&
         runnerLoadGame1 != 0x0 &&
         temp1 != 0x0 &&
-        YYGetPtrAddress != 0x0 &&
         temp2 != 0x0;
 }
 
@@ -158,18 +183,19 @@ uintptr_t getBuiltInFunctionAddress(const char* name) {
 }
 
 bool findInteropAddresses() {
-    Function_AddAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(InitGMLFunctionsAddress + 0x32) + 0x1a);
-
     const uintptr_t pathStartAddress = getBuiltInFunctionAddress("path_start");
     const uintptr_t arraySetOwnerAddress = getBuiltInFunctionAddress("@@array_set_owner@@");
     const uintptr_t placeSnappedAddress = getBuiltInFunctionAddress("place_snapped");
     const uintptr_t stringLengthAddress = getBuiltInFunctionAddress("string_length");
     const uintptr_t vertexUbyte4Address = getBuiltInFunctionAddress("vertex_ubyte4");
+    const uintptr_t textureGetHeightAddress = getBuiltInFunctionAddress("texture_get_height");
     const uintptr_t ansiCharAddress = getBuiltInFunctionAddress("ansi_char");
     const uintptr_t arrayCreateAddress = getBuiltInFunctionAddress("array_create");
     const uintptr_t arraySetPostAddress = getBuiltInFunctionAddress("array_set_post");
     const uintptr_t variableStructGetAddress = getBuiltInFunctionAddress("variable_struct_get");
+    const uintptr_t variableStructSetAddress = getBuiltInFunctionAddress("variable_struct_set");
 
+#ifdef _WIN64
     YYGetFloatAddress = followReferenceAt<int32_t>(pathStartAddress + 0x4e);
     YYGetBoolAddress = followReferenceAt<int32_t>(pathStartAddress + 0x3c);
     YYGetInt32Address = followReferenceAt<int32_t>(pathStartAddress + 0x2d);
@@ -177,12 +203,35 @@ bool findInteropAddresses() {
     YYGetRealAddress = followReferenceAt<int32_t>(placeSnappedAddress + 0x25);
     YYGetStringAddress = followReferenceAt<int32_t>(stringLengthAddress + 0x11);
     YYGetUint32Address = followReferenceAt<int32_t>(vertexUbyte4Address + 0x44);
+    YYGetPtrOrIntAddress = followReferenceAt<int32_t>(textureGetHeightAddress + 0x18);
     YYCreateStringAddress = followReferenceAt<int32_t>(ansiCharAddress + 0x27);
     ARRAY_RefAllocAddress = followReferenceAt<int32_t>(arrayCreateAddress + 0x31);
     GET_RValueAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x4e);
     YYErrorAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x70);
     SET_RValue_ArrayAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x84);
     Code_Variable_Find_Slot_From_NameAddress = followReferenceAt<int32_t>(followReferenceAt<char>(variableStructGetAddress + 0x4e) + 0x2f);
+    Variable_GetValue_DirectAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(followReferenceAt<char>(variableStructGetAddress + 0x4e) + 0x16) - 0x4);
+    Code_Variable_FindAlloc_Slot_From_NameAddress = followReferenceAt<int32_t>(followReferenceAt<char>(variableStructSetAddress + 0x4c) + 0x35);
+    Variable_SetValue_DirectAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(followReferenceAt<char>(variableStructSetAddress + 0x4c) + 0x1c) - 0x4);
+#else
+    YYGetFloatAddress = followReferenceAt<int32_t>(pathStartAddress + 0x3b);
+    YYGetBoolAddress = followReferenceAt<int32_t>(pathStartAddress + 0x15);
+    YYGetInt32Address = followReferenceAt<int32_t>(pathStartAddress + 0x9);
+    YYGetInt64Address = followReferenceAt<int32_t>(arraySetOwnerAddress + 0x7);
+    YYGetRealAddress = followReferenceAt<int32_t>(placeSnappedAddress + 0x1f);
+    YYGetStringAddress = followReferenceAt<int32_t>(stringLengthAddress + 0x7);
+    YYGetUint32Address = followReferenceAt<int32_t>(vertexUbyte4Address + 0x30);
+    YYGetPtrOrIntAddress = followReferenceAt<int32_t>(textureGetHeightAddress + 0x13);
+    YYCreateStringAddress = followReferenceAt<int32_t>(ansiCharAddress + 0x1f);
+    ARRAY_RefAllocAddress = followReferenceAt<int32_t>(arrayCreateAddress + 0x11);
+    GET_RValueAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x28);
+    YYErrorAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x4a);
+    SET_RValue_ArrayAddress = followReferenceAt<int32_t>(arraySetPostAddress + 0x59);
+    Code_Variable_Find_Slot_From_NameAddress = followReferenceAt<int32_t>(followReferenceAt<char>(variableStructGetAddress + 0x28) + 0x33);
+    Variable_GetValue_DirectAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(followReferenceAt<char>(variableStructGetAddress + 0x28) + 0x1c) - 0x8);
+    Code_Variable_FindAlloc_Slot_From_NameAddress = followReferenceAt<int32_t>(followReferenceAt<char>(variableStructSetAddress + 0x28) + 0x1b);
+    Variable_SetValue_DirectAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(followReferenceAt<char>(variableStructSetAddress + 0x28) + 0x4) - 0x8);
+#endif
 
     return pathStartAddress != 0x0 &&
         arraySetOwnerAddress != 0x0 &&
@@ -192,7 +241,8 @@ bool findInteropAddresses() {
         ansiCharAddress != 0x0 &&
         arrayCreateAddress != 0x0 &&
         arraySetPostAddress != 0x0 &&
-        variableStructGetAddress != 0x0;
+        variableStructGetAddress != 0x0 &&
+        variableStructSetAddress != 0x0;
 }
 
 // some performance-no-int-to-ptr thing for all of these as on line 113
@@ -225,8 +275,8 @@ int32_t __cdecl YYGetInt32(RValue* arg, int argindex) {
 int64_t __cdecl YYGetInt64(RValue* arg, int argindex) {
     return reinterpret_cast<int64_t(*)(RValue*, int)>(YYGetInt64Address)(arg, argindex);
 }
-void* __cdecl YYGetPtr(RValue* arg, int argindex) {
-    return reinterpret_cast<void*(*)(RValue*, int)>(YYGetPtrAddress)(arg, argindex);
+intptr_t __cdecl YYGetPtrOrInt(RValue* arg, int argindex) {
+    return reinterpret_cast<intptr_t(*)(RValue*, int)>(YYGetPtrOrIntAddress)(arg, argindex);
 }
 double_t __cdecl YYGetReal(RValue* arg, int argindex) {
     return reinterpret_cast<double(*)(RValue*, int)>(YYGetRealAddress)(arg, argindex);
@@ -251,6 +301,15 @@ bool __cdecl GET_RValue(RValue* value, RValue* arr, YYObjectBase* unk, int index
 }
 int __cdecl Code_Variable_Find_Slot_From_Name(YYObjectBase* obj, char* name) {
     return reinterpret_cast<int(*)(YYObjectBase*, char*)>(Code_Variable_Find_Slot_From_NameAddress)(obj, name);
+}
+bool __cdecl Variable_GetValue_Direct(YYObjectBase* obj, int slot, int alwaysMinInt32, RValue* value, bool unk1, bool unk2) {
+    return reinterpret_cast<bool(*)(YYObjectBase*, int, int, RValue*, bool, bool)>(Variable_GetValue_DirectAddress)(obj, slot, alwaysMinInt32, value, unk1, unk2);
+}
+int __cdecl Code_Variable_FindAlloc_Slot_From_Name(YYObjectBase* obj, char* name) {
+    return reinterpret_cast<int(*)(YYObjectBase*, char*)>(Code_Variable_FindAlloc_Slot_From_NameAddress)(obj, name);
+}
+bool __cdecl Variable_SetValue_Direct(YYObjectBase* obj, int slot, int alwaysMinInt32, RValue* value) {
+    return reinterpret_cast<bool(*)(YYObjectBase*, int, int, RValue*)>(Variable_SetValue_DirectAddress)(obj, slot, alwaysMinInt32, value);
 }
 // ReSharper restore CppInconsistentNaming IdentifierTypo CppParameterMayBeConst
 

@@ -24,7 +24,7 @@ EXPORTS
     YYGetFloat
     YYGetInt32
     YYGetInt64
-    YYGetPtr
+    YYGetPtrOrInt
     YYGetReal
     YYGetString
     YYGetUint32
@@ -33,3 +33,6 @@ EXPORTS
     SET_RValue_Array
     GET_RValue
     Code_Variable_Find_Slot_From_Name
+    Variable_GetValue_Direct
+    Code_Variable_FindAlloc_Slot_From_Name
+    Variable_SetValue_Direct
