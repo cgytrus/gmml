@@ -258,6 +258,8 @@ public static class Patcher {
     }
 
     private static List<(IGameMakerMod mod, ModData data)> QueueMods() {
+        Directory.CreateDirectory(modsPath);
+
         string whitelistPath = Path.Combine(modsPath, "whitelist.txt");
         string blacklistPath = Path.Combine(modsPath, "blacklist.txt");
 
