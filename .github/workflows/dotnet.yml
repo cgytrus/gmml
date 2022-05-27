@@ -20,23 +20,23 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Restore dependencies
-      run: dotnet restore GmmlPatcher
+      run: dotnet restore
     - name: Build win-x64
-      run: msbuild GmmlPatcher -p:Configuration=Release -p:NativeRuntimeIdentifier=win-x64
+      run: msbuild -p:Configuration=Release -p:Platform=x64
     - name: Build win-x86
-      run: msbuild GmmlPatcher -p:Configuration=Release -p:NativeRuntimeIdentifier=win-x86
+      run: msbuild -p:Configuration=Release -p:Platform=x86
     - name: Archive win-x64
       run: |
-        dir .\GmmlPatcher\bin\ | Write-Output
-        dir .\GmmlPatcher\bin\win-x64-net6.0 | Write-Output
-        dir .\GmmlPatcher\bin\win-x64-net6.0\Release | Write-Output
-        Compress-Archive -Path .\GmmlPatcher\bin\win-x64-net6.0\Release\* -DestinationPath .\gmml-win-x64.zip
+        dir .\bin\ | Write-Output
+        dir .\bin\win-x64 | Write-Output
+        dir .\bin\win-x64\Release | Write-Output
+        Compress-Archive -Path .\bin\win-x64\Release\* -DestinationPath .\gmml-win-x64.zip
     - name: Archive win-x86
       run: |
-        dir .\GmmlPatcher\bin\ | Write-Output
-        dir .\GmmlPatcher\bin\win-x86-net6.0 | Write-Output
-        dir .\GmmlPatcher\bin\win-x86-net6.0\Release | Write-Output
-        Compress-Archive -Path .\GmmlPatcher\bin\win-x86-net6.0\Release\* -DestinationPath .\gmml-win-x86.zip
+        dir .\bin\ | Write-Output
+        dir .\bin\win-x86 | Write-Output
+        dir .\bin\win-x86\Release | Write-Output
+        Compress-Archive -Path .\bin\win-x86\Release\* -DestinationPath .\gmml-win-x86.zip
     - name: Upload win-x64 artifact
       uses: actions/upload-artifact@v3
       with:
