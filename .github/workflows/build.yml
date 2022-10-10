@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    branches:
+    - '**'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration:
+        - Release
+        - Debug
+        platform:
+        - x64
+        - x86
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: msbuild -p:Configuration=${{ matrix.configuration }} -p:Platform=${{ matrix.platform }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: gmml-win-${{ matrix.platform }}-${{ matrix.configuration }}
+        path: .\bin\win-${{ matrix.platform }}\${{ matrix.configuration }}
