@@ -4,7 +4,7 @@ based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
 
 ## Installation
 1. Install [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-6.0.3-windows-x64-installer)
-2. Download latest release (there are none yet lol, [compile it yourself](#Compilation))
+2. Download latest release (currently only [development releases](https://github.com/cgytrus/gmml/releases/tag/Development) are available)
 3. Unpack the downloaded archive into the game's folder
 
 ## Usage
