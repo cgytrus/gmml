@@ -112,7 +112,9 @@ bool findAddresses() {
     GetModuleInformation(GetCurrentProcess(), GetModuleHandle(0), &info, sizeof(MODULEINFO));
 
     // ReSharper disable once CppInconsistentNaming
-#define find(pattern) (uintptr_t)findPattern((PBYTE)base, info.SizeOfImage, pattern)
+#define findNext(from, pattern) (uintptr_t)findPattern((PBYTE)(from), info.SizeOfImage - (DWORD)((from) - base), pattern)
+    // ReSharper disable once CppInconsistentNaming
+#define find(pattern) findNext(base, pattern)
 
 // need different signatures and offsets for x86 and x64
 #ifdef _WIN64
@@ -124,15 +126,18 @@ bool findAddresses() {
     mmFreeAddress = followReferenceAt<int32_t>(temp0 + 0x12);
 
     const auto runnerLoadGame1 = find("74 ?? 48 83 ?? ?? 74 ?? 8b 41");
-    LoadSave_ReadBundleFileAddress = followReferenceAt<int32_t>(followReferenceAt<char>(runnerLoadGame1 + 1) + 0x1c);
+    LoadSave_ReadBundleFileAddress = followReferenceAt<int32_t>(
+        findNext(followReferenceAt<char>(runnerLoadGame1 + 1), "74 ?? e8") + 3);
 
     const auto temp1 = find("81 e7 ?? ?? ?? ?? 81 ff");
     InitGMLFunctionsAddress = followReferenceAt<int32_t>(temp1 + 0x25);
     Function_AddAddress = followReferenceAt<int32_t>(followReferenceAt<int32_t>(InitGMLFunctionsAddress + 0x32) + 0x1a);
 
-    const auto temp2 = find("75 ?? 44 8b ?? ba ?? ?? ?? ?? 33");
-    Code_Function_FindAddress = followReferenceAt<int32_t>(temp2 + 0x1a);
-    Code_Function_GET_the_functionAddress = followReferenceAt<int32_t>(temp2 + 0x36);
+    Code_Function_FindAddress = find("48 ?? ?? ?? ?? 57 48 83 ?? ?? c7 02");
+    Code_Function_GET_the_functionAddress = find("3b 0d ?? ?? ?? ?? 7f 3a");
+    // x86 still uses the old way, so to not rewrite the return at the end for different architectures we just do this,
+    // i'm pretty sure this should get optimized away anyway
+    const auto temp2 = Code_Function_FindAddress != 0x0 && Code_Function_GET_the_functionAddress != 0x0;
 #else
     const auto runnerLoadGame0 = find("8a ?? 46 84 ?? 75 ?? 6a ?? 2b ?? 8d");
     mmAllocAddress = followReferenceAt<int32_t>(runnerLoadGame0 + 0x1c);
