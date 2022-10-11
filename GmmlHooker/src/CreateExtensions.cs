@@ -1,16 +1,14 @@
 using System.Collections.ObjectModel;
 
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 
 namespace GmmlHooker;
 
-// rider, this is a GOD DAMN PUBLIC API
-// CAN YOU SHUT UP ALREADY PLEASE thanks
-// ReSharper disable MemberCanBePrivate.Global MemberCanBeInternal UnusedMember.Global
-// ReSharper disable UnusedMethodReturnValue.Global OutParameterValueIsAlwaysDiscarded.Global
-
+[PublicAPI]
 public static class CreateExtensions {
     public static UndertaleCode CreateCode(this UndertaleData data, UndertaleString name, out UndertaleCodeLocals locals) {
         locals = new UndertaleCodeLocals {

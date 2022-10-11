@@ -1,6 +1,9 @@
+using JetBrains.Annotations;
+
 namespace GmmlInteropGenerator.Types;
 
 // ReSharper disable once InconsistentNaming
+[PublicAPI]
 public enum RVKind : uint {
     Real = 0, // Real value
     String = 1, // String value

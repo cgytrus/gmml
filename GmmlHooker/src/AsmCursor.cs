@@ -1,12 +1,13 @@
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 
 namespace GmmlHooker;
-// ReSharper disable MemberCanBePrivate.Global MemberCanBeInternal UnusedMember.Global
-// ReSharper disable UnusedMethodReturnValue.Global OutParameterValueIsAlwaysDiscarded.Global
 
 // totally not stolen from MonoMod
+[PublicAPI]
 public class AsmCursor {
     public int index {
         get => _index;

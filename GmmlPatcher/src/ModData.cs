@@ -1,5 +1,8 @@
+using JetBrains.Annotations;
+
 namespace GmmlPatcher;
 
+[PublicAPI]
 public readonly struct ModData {
     public ModMetadata metadata { get; init; }
     public string path { get; init; }

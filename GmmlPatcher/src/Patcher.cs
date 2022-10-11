@@ -8,13 +8,15 @@ using System.Text.Json;
 
 using GmmlInteropGenerator;
 
+using JetBrains.Annotations;
+
 using Semver;
 
 using UndertaleModLib;
 
 namespace GmmlPatcher;
 
-// ReSharper disable once UnusedType.Global
+[PublicAPI]
 public static class Patcher {
     private static readonly string patcherPath = Path.Combine("gmml", "patcher");
     private static readonly string modsPath = Path.Combine("gmml", "mods");
@@ -22,7 +24,6 @@ public static class Patcher {
     private static readonly string hashesFilePath = Path.Combine(cachePath, "hashes.json");
     private static readonly string additionalCacheFilesFilePath = Path.Combine(cachePath, "additionalFiles.json");
 
-    // ReSharper disable once MemberCanBeInternal UnusedAutoPropertyAccessor.Global
     public static IEnumerable<ModData> mods { get; private set; } = Array.Empty<ModData>();
 
     private static bool _loadedAtLeastOnce;
@@ -36,7 +37,6 @@ public static class Patcher {
     [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe void* mmAlloc(ulong size, sbyte* why, int unk2, bool unk3);
 
-    // ReSharper disable once UnusedMember.Global
     [UnmanagedCallersOnly]
     public static unsafe byte* ModifyData(int audioGroup, byte* original, int* size) {
         if(_errored) return original;
@@ -378,7 +378,6 @@ public static class Patcher {
 
     private static bool VerifyVersion(string version) => SemVersion.TryParse(version, SemVersionStyles.Strict, out _);
 
-    // ReSharper disable once CognitiveComplexity
     private static bool TryQueueMod(string path, ModMetadata metadata, IEnumerable<(string, ModMetadata)> availableMods,
         [NotNullWhen(true)] out IGameMakerMod? mod, [NotNullWhen(true)] out Type? type,
         out IEnumerable<ModMetadata> availableDependencies) {

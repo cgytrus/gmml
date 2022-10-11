@@ -7,13 +7,15 @@ using GmmlInteropGenerator.Types;
 
 using GmmlPatcher;
 
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Models;
 
 namespace GmmlExampleMod;
 
 // see https://github.com/cgytrus/WysApi/WysExampleMod for more examples
-// ReSharper disable once UnusedType.Global
+[PublicAPI]
 public partial class ExampleMod : IGameMakerMod {
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Local")]
     private class Config {

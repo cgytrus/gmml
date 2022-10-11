@@ -1,8 +1,10 @@
 using System.Runtime.InteropServices;
 
+using JetBrains.Annotations;
+
 namespace GmmlInteropGenerator.Types;
 
-[StructLayout(LayoutKind.Explicit, Size = 16)]
+[StructLayout(LayoutKind.Explicit, Size = 16), PublicAPI]
 public unsafe struct RValue {
     [FieldOffset(0)] public bool valueBool;
     [FieldOffset(0)] public int valueInt32;

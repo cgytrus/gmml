@@ -1,12 +1,14 @@
 ﻿using GmmlPatcher;
 
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 
 namespace GmmlHooker;
 
-// ReSharper disable once UnusedType.Global
+[PublicAPI]
 public class HookerMod : IGameMakerMod {
     public void Load(int audioGroup, UndertaleData data, ModData currentMod) {
         if(audioGroup != 0) return;

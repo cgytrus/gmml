@@ -1,6 +1,8 @@
+using JetBrains.Annotations;
+
 namespace GmmlInteropGenerator;
 
-[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+[AttributeUsage(AttributeTargets.Method, Inherited = false), PublicAPI]
 public class AdvancedGmlInteropAttribute : Attribute {
     public string name { get; }
     public int argumentCount { get; }

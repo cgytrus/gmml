@@ -1,8 +1,11 @@
 using System.Runtime.InteropServices;
 
+using JetBrains.Annotations;
+
 namespace GmmlInteropGenerator.Types;
 
 // ReSharper disable once InconsistentNaming
+[PublicAPI]
 public unsafe struct YYObjectBase {
     public CInstanceBase instanceBase;
     public YYObjectBase* pNextObject;

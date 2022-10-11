@@ -1,10 +1,10 @@
-using GmmlInteropGenerator;
+using JetBrains.Annotations;
 
 using UndertaleModLib;
-// ReSharper disable UnusedParameter.Global
 
 namespace GmmlPatcher;
 
+[PublicAPI]
 public interface IGameMakerMod {
     // audioGroup 0 = game data
     public void EarlyLoad(int audioGroup, UndertaleData data, ModData currentMod) { }

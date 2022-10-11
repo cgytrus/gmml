@@ -1,11 +1,11 @@
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Models;
 
 namespace GmmlHooker;
 
-// ReSharper disable MemberCanBePrivate.Global MemberCanBeInternal UnusedMember.Global
-// ReSharper disable UnusedMethodReturnValue.Global OutParameterValueIsAlwaysDiscarded.Global
-
+[PublicAPI]
 public static class GmlSafeExtensions {
     public static void ReplaceGmlSafe(this UndertaleCode code, string gmlCode, UndertaleData data) {
         try { code.ReplaceGML(gmlCode, data); }

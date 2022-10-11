@@ -1,11 +1,14 @@
 ﻿using System.Text.Json.Serialization;
 
+using JetBrains.Annotations;
+
 using Semver;
-// ReSharper disable MemberCanBeInternal
 
 namespace GmmlPatcher;
 
+[PublicAPI]
 public struct ModMetadata {
+    [PublicAPI]
     public struct ModDependency {
         public string id { get; }
         public string version { get; }

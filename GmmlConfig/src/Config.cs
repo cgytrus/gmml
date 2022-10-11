@@ -4,12 +4,14 @@ using GmmlHooker;
 
 using GmmlPatcher;
 
+using JetBrains.Annotations;
+
 using UndertaleModLib;
 using UndertaleModLib.Models;
 
 namespace GmmlConfig;
 
-// ReSharper disable once ClassNeverInstantiated.Global
+[PublicAPI]
 public class Config : IGameMakerMod {
     private static readonly string configPath = Path.Combine("gmml", "config");
 

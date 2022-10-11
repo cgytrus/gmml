@@ -1,5 +1,8 @@
+using JetBrains.Annotations;
+
 namespace GmmlInteropGenerator.Types;
 
+[PublicAPI]
 public unsafe struct CInstance {
     public YYObjectBase objectBase;
     public long createCounter;

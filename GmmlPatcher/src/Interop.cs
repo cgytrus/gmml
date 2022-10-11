@@ -4,15 +4,16 @@ using System.Runtime.InteropServices;
 using GmmlInteropGenerator;
 using GmmlInteropGenerator.Types;
 
+using JetBrains.Annotations;
+
 namespace GmmlPatcher;
 
-// ReSharper disable once UnusedType.Global
+[PublicAPI]
 public static class Interop {
     [DllImport("version.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe void Function_Add(sbyte* name, GmlCall function, int argCount, bool unk);
 
     [UnmanagedCallersOnly]
-    // ReSharper disable once UnusedMember.Global
     public static void InitGmlFunctions() {
         Console.WriteLine("Initializing interop functions");
         foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
