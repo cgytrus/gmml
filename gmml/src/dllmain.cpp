@@ -454,13 +454,18 @@ void __cdecl InitGMLFunctions_hook() {
 #pragma warning(disable : 26812)
 bool loadModLoader() {
     loadSettings("gmml.cfg");
-    if(settings.showConsole) AllocConsole();
 
-    if(settings.debug) MessageBoxA(NULL, "Loading", "Info", MB_OK);
+    if(settings.showConsole)
+        AllocConsole();
 
-    if(!findAddresses()) return false;
+    if(settings.debug)
+        MessageBoxA(NULL, "Loading", "Info", MB_OK);
 
-    if(MH_Initialize() != MH_OK) return false;
+    if(!findAddresses())
+        return false;
+
+    if(MH_Initialize() != MH_OK)
+        return false;
 
     if(MH_CreateHook(reinterpret_cast<void*>(LoadSave_ReadBundleFileAddress), LoadSave_ReadBundleFile_hook,
         reinterpret_cast<void**>(&LoadSave_ReadBundleFile_orig)) != MH_OK)
@@ -470,7 +475,8 @@ bool loadModLoader() {
         reinterpret_cast<void**>(&InitGMLFunctions_orig)) != MH_OK)
         return false;
 
-    if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK) return false;
+    if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK)
+        return false;
 
     return true;
 }
