@@ -15,7 +15,7 @@
 #include <cassert>
 
 // .NET CLR hosting
-// https://github.com/dotnet/docs/blob/main/docs/core/tutorials/netcore-hosting.md
+// https://learn.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting
 #include "../lib/nethost/nethost.h"
 #include "../lib/nethost/coreclr_delegates.h"
 #include "../lib/nethost/hostfxr.h"
