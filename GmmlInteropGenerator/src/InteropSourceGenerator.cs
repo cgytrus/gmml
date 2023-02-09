@@ -398,7 +398,7 @@ public partial class {type.Identifier.ValueText} {{
             GenerateManagedToGml(builder, arrayTypeStr, elementPtrName, $"{valueName}[{indexName}]",
                 $"{indent}{IndentLevel}");
 
-            builder.AppendLine($"{indent}{IndentLevel}SET_RValue_Array({resultName}, {elementPtrName}, ({nameof(YYObjectBase)}*)0), {indexName}");
+            builder.AppendLine($"{indent}{IndentLevel}SET_RValue_Array({resultName}, {elementPtrName}, ({nameof(YYObjectBase)}*)0, {indexName});");
             builder.AppendLine($"{indent}}}");
         }
         else if(IsUnknownPointer(typeStr))
