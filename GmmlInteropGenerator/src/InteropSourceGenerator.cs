@@ -393,7 +393,7 @@ public partial class {type.Identifier.ValueText} {{
 {indent}{resultName}->{nameof(RValue.refArray)} = ARRAY_RefAlloc();
 {indent}for(int {indexName} = 0; {indexName} < {valueName}.Length; {indexName}++) {{
 {indent}{IndentLevel}{nameof(RValue)} {elementName} = new();
-{indent}{IndentLevel}{nameof(RValue)}* {elementPtrName} = &{elementName}");
+{indent}{IndentLevel}{nameof(RValue)}* {elementPtrName} = &{elementName};");
 
             GenerateManagedToGml(builder, arrayTypeStr, elementPtrName, $"{valueName}[{indexName}]",
                 $"{indent}{IndentLevel}");
