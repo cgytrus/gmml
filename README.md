@@ -1,3 +1,6 @@
+# ⚠️ THIS PROJECT IS NO LONGER MAINTAINED ⚠️
+## Please, use [gs2ml](https://github.com/rgc-exists/gs2ml) instead
+
 # GameMaker Mod Loader
 A mod loader for some GameMaker Studio 2 games ***not*** using YYC,
 based on [UndertaleModTool](https://github.com/krzys-h/UndertaleModTool)
